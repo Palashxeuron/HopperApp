@@ -1,34 +1,31 @@
-#include <map>
-#include <BluetoothSerial.h>
+// This example code is in the Public Domain (or CC0 licensed, at your option.)
+// By Evandro Copercini - 2018
+//
+// This example creates a bridge between Serial and Classical Bluetooth (SPP)
+// and also demonstrate that SerialBT have the same functionalities of a normal Serial
+// Note: Pairing is authenticated automatically by this device
 
+#include "BluetoothSerial.h"
+
+String device_name = "Smart-Scale";
+
+// Check if Bluetooth is available
 #if !defined(CONFIG_BT_ENABLED) || !defined(CONFIG_BLUEDROID_ENABLED)
 #error Bluetooth is not enabled! Please run `make menuconfig` to and enable it
 #endif
 
+// Check Serial Port Profile
 #if !defined(CONFIG_BT_SPP_ENABLED)
-#error Serial Bluetooth not available or not enabled. It is only available for the ESP32 chip.
+#error Serial Port Profile for Bluetooth is not available or not enabled. It is only available for the ESP32 chip.
 #endif
 
 BluetoothSerial SerialBT;
 
-#define BT_DISCOVER_TIME 10000
-esp_spp_sec_t sec_mask = ESP_SPP_SEC_NONE;  // or ESP_SPP_SEC_ENCRYPT|ESP_SPP_SEC_AUTHENTICATE to request pincode confirmation
-esp_spp_role_t role = ESP_SPP_ROLE_SLAVE;   // or ESP_SPP_ROLE_MASTER
-
-// std::map<BTAddress, BTAdvertisedDeviceSet> btDeviceList;
-
 void setup() {
   Serial.begin(115200);
-    if (!SerialBT.begin("Smart scale", true)) {
-    Serial.println("========== serialBT failed!");
-    abort();
-  }else {
-    Serial.println("Bluetooth initialized");
-  }
-    // SerialBT.setPin("1234"); // doesn't seem to change anything
-  // SerialBT.enableSSP(); // doesn't seem to change anything
-  
-  Serial.println("The device started, now you can pair it with Bluetooth!");
+  SerialBT.begin(device_name);  //Bluetooth device name
+  //SerialBT.deleteAllBondedDevices(); // Uncomment this to delete paired devices; Must be called after begin
+  Serial.printf("The device with name \"%s\" is started.\nNow you can pair it with Bluetooth!\n", device_name.c_str());
 }
 
 void loop() {
@@ -37,13 +34,6 @@ void loop() {
   }
   if (SerialBT.available()) {
     Serial.write(SerialBT.read());
-  }else {
-    Serial.println("not connected");   
-    delay(1000);
   }
-  if (SerialBT.hasClient()) {
-    Serial.println("Client connected");
-  } else {
-    Serial.println("No client connected");
-  }
+  delay(20);
 }

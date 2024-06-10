@@ -152,7 +152,10 @@ const unsigned char *bitmap_allArray[5] = {
     bitmap_bluetooth_off,
     bitmap_bluetooth_searching,
     bitmap_bluetooth_transfer};
-
+String startMarker_Ard = "arduino:";
+String endMarker_Ard = ":oniudra";
+String startMarker_Esp = "esp32:";
+String endMarker_Esp = ":23pse";
 bool debug = true;
 
 void setup()
@@ -171,9 +174,9 @@ void setup()
 void loop()
 {
   // put your main code here, to run repeatedly:
-  readLoadCell();
-  readSerial1();
-  readSerial();
+  readLoadCell(); // read from load cell
+  readEsp();      // read from esp32
+  readSerial();   // read from serial monitor
 }
 
 void turnOnDisplay()
@@ -253,13 +256,12 @@ void readLoadCell()
     displayText(str);
   }
 }
-void readSerial1() // read from esp32
+void readEsp() // read from esp32
 {
   String str = "";
   while (Serial1.available())
   {
     char c = Serial1.read();
-    Serial.print(c);
     str += c;
   }
   handleEsp32Request(str);
@@ -275,16 +277,41 @@ void readSerial() // read from serial monitor
   }
 }
 
-void handleEsp32Request(String request)
+void handleEsp32Request(String data)
 {
-  if (request == "calibrate")
+  if (isEspMessage(data)) // check if data contains the start and end marker
   {
-    calibrateLoadCell();
+    String request = extractEspMessage(data);
+    log("esp32: " + request);
+
+    if (request == "getWeight")
+    {
+      readLoadCell();
+    }
+    if (request == "tare")
+    {
+      scale.tare();
+    }
+    if (request == "calibrate")
+    {
+      calibrateLoadCell();
+    }
   }
 }
 void sendToESP32(String data)
 {
-  Serial1.println(" " + data);
+  Serial1.println(" " + startMarker_Ard + data + endMarker_Ard);
+}
+bool isEspMessage(String data)
+{
+  return data.indexOf(startMarker_Esp) >= 0 && data.indexOf(endMarker_Esp) >= 0;
+}
+String extractEspMessage(String data)
+{
+  // get string between $$# and #$$
+  int startIndex = data.indexOf(startMarker_Esp) + startMarker_Esp.length();
+  int endIndex = data.indexOf(endMarker_Esp);
+  return data.substring(startIndex, endIndex);
 }
 
 void drawHomePage(const HomePageState &state)
