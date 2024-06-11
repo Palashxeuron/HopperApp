@@ -17,7 +17,8 @@ BluetoothSerial SerialBT;
 #define BT_DISCOVER_TIME 10000
 esp_spp_sec_t sec_mask = ESP_SPP_SEC_NONE; // or ESP_SPP_SEC_ENCRYPT|ESP_SPP_SEC_AUTHENTICATE to request pincode confirmation
 // esp_spp_sec_t sec_mask = ESP_SPP_SEC_ENCRYPT | ESP_SPP_SEC_AUTHENTICATE;
-esp_spp_role_t role = ESP_SPP_ROLE_SLAVE; // or ESP_SPP_ROLE_MASTER
+esp_spp_role_t role = ESP_SPP_ROLE_SLAVE;                         // or ESP_SPP_ROLE_MASTER
+esp_bd_addr_t new_address = {0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC}; // Replace with your desired address
 
 #define RX 16
 #define TX 17
@@ -26,6 +27,7 @@ esp_spp_role_t role = ESP_SPP_ROLE_SLAVE; // or ESP_SPP_ROLE_MASTER
 bool SETUP_COMPLETE = false;
 bool PAIRED = false;    // paired with a master device
 bool CONNECTED = false; // connected to a paired master device
+bool APP_CONNECTED = false; // connected to a paired master device
 String startMarker_Ard = "arduino:";
 String endMarker_Ard = ":oniudra";
 String startMarker_Esp = "esp32:";
@@ -80,6 +82,7 @@ void initBluetooth()
     SETUP_COMPLETE = true;
   }
 }
+
 void BT_Pairing_Callback(boolean success)
 {
   if (success)
@@ -147,7 +150,7 @@ void readArduino() // read from the arduino
   if (isArduinoMessage(str))
   {
     str = extractArduinoMessage(str);
-    SerialBT.println(str);             // send to the bluetooth
+    SerialBT.println(str);  // send to the bluetooth
     log("arduino: " + str); // send to the serial monitor
   }
 }

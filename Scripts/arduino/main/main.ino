@@ -283,7 +283,11 @@ void handleEsp32Request(String data)
   {
     String request = extractEspMessage(data);
     log("esp32: " + request);
-
+    // handshake
+    if(request == "Are you Smart-Scale"){
+      log("Yes, I am Smart-Scale");
+      sendToESP32("Yes, I am Smart-Scale");
+    }
     if (request == "getWeight")
     {
       readLoadCell();

@@ -1,10 +1,12 @@
 // All of the Node.js APIs are available in the preload process.
 // It has the same sandbox as a Chrome extension.
-window.addEventListener('DOMContentLoaded', () => {
-  for (const versionType of['chrome', 'electron', 'node']) {
-      document.getElementById(`${versionType}-version`).innerText = process.versions[versionType]
-  }
+const { contextBridge, ipcRenderer, ipcMain } = require("electron");
 
-  document.getElementById('serialport-version').innerText = require('serialport/package').version
-
-})
+// Bluetooth serial API
+contextBridge.exposeInMainWorld("bt", {
+  refreshPorts: () => ipcRenderer.invoke("refresh-ports"),
+	listPorts: () => ipcRenderer.invoke("list-ports"),
+	getSmartScalePort: () => ipcRenderer.invoke("get-smart-scale-port"),
+	connectPort: () => ipcRenderer.invoke("connect-port"),
+  disconnectPort: () => ipcRenderer.invoke("disconnect-port"),
+});
