@@ -129,13 +129,14 @@ void readSerialBT() // read from the bluetooth
     char c = SerialBT.read();
     str += c;
   }
-  if(isMasterMessage(str)){
+  if (isMasterMessage(str))
+  {
     str = extractMasterMessage(str);
-    log("received from master: "+ str);
+    log("received from master: " + str);
     sendToArduino(str);
   }
 }
-void readArduino() // read from the arduino - works
+void readArduino() // read from the arduino
 {
   String str = "";
   while (Serial2.available())
@@ -143,16 +144,17 @@ void readArduino() // read from the arduino - works
     char c = Serial2.read();
     str += c;
   }
-  if (isArduinoMessage(str)){
+  if (isArduinoMessage(str))
+  {
     str = extractArduinoMessage(str);
-    SerialBT.println(str); // send to the bluetooth
-    Serial.println(str);   // send to the serial monitor
+    SerialBT.println(str);             // send to the bluetooth
+    log("arduino: " + str); // send to the serial monitor
   }
 }
 
 void sendToArduino(String data)
 {
-  log("sending to arduino: "+ data); // send to the serial monitor
+  log("sending to arduino: " + data); // send to the serial monitor
   Serial2.println(startMarker_Esp + data + endMarker_Esp);
 }
 bool isArduinoMessage(String data)
