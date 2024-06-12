@@ -3,6 +3,8 @@ const path = require("node:path");
 const url = require("node:url");
 const IpcHandler = require("./ipcHandler");
 
+app.commandLine.appendSwitch("enable-web-bluetooth", true);
+
 let ipcHandler;
 let mainWindow;
 const isPackaged = false;

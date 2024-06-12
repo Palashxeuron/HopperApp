@@ -1,4 +1,4 @@
-const { ipcMain, BrowserWindow, app } = require("electron");
+const { ipcMain, BrowserWindow, app, dialog } = require("electron");
 const { ConnectionHandler } = require("./connectionHandler.js");
 
 class IpcHandler {
@@ -32,6 +32,14 @@ class IpcHandler {
     });
     ipcMain.handle("disconnect-port", (event, route) => {
       return this.connectionHandler.closePort(port);
+    });
+    ipcMain.handle("get-local-path", async (event, route) => {
+      const selectedPath = await dialog.showOpenDialog({
+        properties: ['openDirectory'],
+      });
+      const filepath = selectedPath.filePaths[0];
+    //   console.log("selectedPath", filepath);
+      return filepath;
     });
   }
 }

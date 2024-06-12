@@ -1,92 +1,118 @@
 body {
-    margin: 0;
-    font-family: Arial, sans-serif;
-  }
-  
-  .container {
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-  }
-  
-  .top-menu-bar {
-    display: flex;
-    background-color: #333;
-    color: white;
-    padding: 10px;
-  }
-  
-  .top-menu-bar .menu-item {
-    margin-right: 20px;
-    cursor: pointer;
-  }
-  
-  .bottom-info-bar {
-    display: flex;
-    justify-content: space-around;
-    background-color: #333;
-    color: white;
-    padding: 10px;
-    position: fixed;
-    bottom: 0;
-    width: 100%;
-  }
-  
-  .right-sidebar {
-    position: fixed;
-    top: 0;
-    right: 0;
-    background-color: #444;
-    color: white;
-    width: 200px;
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-    padding: 10px;
-  }
-  
-  .sidebar-button {
-    background-color: #555;
-    color: white;
-    border: none;
-    padding: 10px;
-    margin: 5px 0;
-    cursor: pointer;
-  }
-  
-  .sidebar-button:hover {
-    background-color: #666;
-  }
-  
-  .main-content {
-    flex: 1;
-    padding: 20px;
-    margin-right: 200px; /* Same as the width of the right sidebar */
-    margin-bottom: 40px; /* Space for the bottom info bar */
-  }
-  
-  .popup {
-    display: none;
-    position: fixed;
-    z-index: 1000;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    background-color: white;
-    border: 1px solid #ccc;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-  }
-  
-  .popup-content {
-    padding: 20px;
-    position: relative;
-  }
-  
-  .close {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    font-size: 20px;
-    cursor: pointer;
-  }
-  
+  margin: 0;
+  font-family: Arial, sans-serif;
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+}
+
+.top-menu-bar {
+  display: flex;
+  background-color: #333;
+  color: white;
+  padding: 10px;
+}
+
+.top-menu-bar .menu-item {
+  margin-right: 20px;
+  cursor: pointer;
+}
+
+.bottom-info-bar {
+  display: flex;
+  justify-content: space-around;
+  background-color: #333;
+  color: white;
+  padding: 10px;
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+}
+
+.right-sidebar {
+  position: fixed;
+  top: 0;
+  right: 0;
+  background-color: #444;
+  color: white;
+  width: 200px;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding: 10px;
+}
+
+.sidebar-button {
+  background-color: #555;
+  color: white;
+  border: none;
+  padding: 10px;
+  margin: 5px 0;
+  cursor: pointer;
+}
+
+.sidebar-button:hover {
+  background-color: #666;
+}
+
+.main-content {
+  flex: 1;
+  padding: 20px;
+  margin-right: 200px; /* Same as the width of the right sidebar */
+  margin-bottom: 40px; /* Space for the bottom info bar */
+}
+
+.popup {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  background-color: white;
+  border: 1px solid #ccc;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+.popup-content {
+  padding: 20px;
+  position: relative;
+}
+
+.close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+#settings-panel {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 20vh;
+  width: 30vw;
+}
+
+#settings-panel label {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+#settings-panel #save-settings-button {
+  align-self: flex-end;
+}
+
+table {
+  border-collapse: collapse;
+}
+
+table,
+th,
+td {
+  border: 1px solid black;
+}

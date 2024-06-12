@@ -4,17 +4,6 @@
 <head>
   <meta charset="UTF-8">
   <title>Smart Scale</title>
-  <style>
-    table {
-      border-collapse: collapse;
-    }
-
-    table,
-    th,
-    td {
-      border: 1px solid black;
-    }
-  </style>
   <link rel="stylesheet" href="index.css">
 </head>
 
@@ -25,14 +14,25 @@
     <main class="main-content">
       <h1>Main Content Area</h1>
       <p>This is the main content area.</p>
+      <div id="chart">
+        <canvas id="myChart"></canvas>
+      </div>
     </main>
     <footer class="bottom-info-bar" id="bottom-bar">
     </footer>
   </div>
   <div class="container" id="popups"></div>
 </body>
-
-<script src="./index.js"></script>
-<script src="./renderer.js"></script>
+<!-- <script type="importmap">
+  {
+    "imports": {
+      "chart.js": "./node_modules/chart.js/dist/chart.js"
+    }
+  }
+</script> -->
+<!-- <script src="./dist/bundle.js"></script> -->
+<script src="./node_modules/chart.js/dist/chart.umd.js"></script>
+<script type="module" src="./index.js"></script>
+<!-- <script src="./renderer.js"></script> -->
 
 </html>

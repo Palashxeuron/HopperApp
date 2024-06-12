@@ -16,7 +16,6 @@ class ConnectionHandler {
     try {
       this.ports = await SerialPort.list();
       //   console.log("ports", this.ports);
-
       if (this.ports.length === 0) {
         this.tableHTML = "No ports discovered";
       } else {
