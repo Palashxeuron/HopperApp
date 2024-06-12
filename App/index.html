@@ -2,62 +2,37 @@
 <html>
 
 <head>
-    <meta charset="UTF-8">
-    <title>Smart Scale</title>
-    <style>
-        table { border-collapse: collapse; }
-        table, th, td { border: 1px solid black; }
-    </style>
-    <link rel="stylesheet" href="index.css">
+  <meta charset="UTF-8">
+  <title>Smart Scale</title>
+  <style>
+    table {
+      border-collapse: collapse;
+    }
+
+    table,
+    th,
+    td {
+      border: 1px solid black;
+    }
+  </style>
+  <link rel="stylesheet" href="index.css">
 </head>
 
 <body>
-    <!-- <div id="error"></div>
-    <div id="ports"></div> -->
-    <div class="container">
-        <!-- <header class="top-menu-bar">
-          <div class="menu-item">File</div>
-          <div class="menu-item">Edit</div>
-          <div class="menu-item">View</div>
-          <div class="menu-item">Help</div>
-        </header> -->
-        <aside class="right-sidebar" id="right-bar">
-        </aside>
-        <main class="main-content">
-          <h1>Main Content Area</h1>
-          <p>This is the main content area.</p>
-        </main>
-        <footer class="bottom-info-bar" id="bottom-bar">
-          
-        </footer>
-      </div>
-    
-      <!-- Popup Windows -->
-      <div id="popup1" class="popup">
-        <div class="popup-content">
-          <span class="close" onclick="closePopup('popup1')">&times;</span>
-          <h2>Popup 1</h2>
-          <p>This is the content of Popup 1.</p>
-        </div>
-      </div>
-      <div id="popup2" class="popup">
-        <div class="popup-content">
-          <span class="close" onclick="closePopup('popup2')">&times;</span>
-          <h2>Popup 2</h2>
-          <p>This is the content of Popup 2.</p>
-        </div>
-      </div>
-      <div id="popup3" class="popup">
-        <div class="popup-content">
-          <span class="close" onclick="closePopup('popup3')">&times;</span>
-          <h2>Popup 3</h2>
-          <p>This is the content of Popup 3.</p>
-        </div>
-      </div>
-    
-      <script src="index.js"></script>
+  <div class="container">
+    <aside class="right-sidebar" id="right-bar">
+    </aside>
+    <main class="main-content">
+      <h1>Main Content Area</h1>
+      <p>This is the main content area.</p>
+    </main>
+    <footer class="bottom-info-bar" id="bottom-bar">
+    </footer>
+  </div>
+  <div class="container" id="popups"></div>
 </body>
 
+<script src="./index.js"></script>
 <script src="./renderer.js"></script>
 
 </html>
