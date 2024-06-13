@@ -9,4 +9,5 @@ contextBridge.exposeInMainWorld("bt", {
 	connectPort: () => ipcRenderer.invoke("connect-port"),
   disconnectPort: () => ipcRenderer.invoke("disconnect-port"),
   getLocalPath: () => ipcRenderer.invoke("get-local-path"),
+  getChartData: () => ipcRenderer.invoke("get-chart-data"),
 });

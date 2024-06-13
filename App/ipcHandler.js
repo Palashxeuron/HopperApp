@@ -33,6 +33,9 @@ class IpcHandler {
     ipcMain.handle("disconnect-port", (event, route) => {
       return this.connectionHandler.closePort(port);
     });
+    ipcMain.handle("get-chart-data", (event, route) => {
+      return this.connectionHandler.getData();
+    });
     ipcMain.handle("get-local-path", async (event, route) => {
       const selectedPath = await dialog.showOpenDialog({
         properties: ['openDirectory'],

@@ -64,15 +64,15 @@ class Popup {
     this.popup = document.createElement("div");
     this.popup.id = this.popupItem.id;
     this.popup.className = "popup";
-    let popupContent = document.createElement("div");
+    const popupContent = document.createElement("div");
     popupContent.className = "popup-content";
-    let close = document.createElement("span");
+    const close = document.createElement("span");
     close.className = "close";
     close.innerHTML = "&times;";
     close.onclick = () => this.closePopup();
-    let title = document.createElement("h2");
+    const title = document.createElement("h2");
     title.innerHTML = this.popupItem.title;
-    let content = document.createElement("p");
+    const content = document.createElement("p");
     if (typeof this.popupItem.content === "function") {
       content.innerHTML = await this.popupItem.content();
     } else {
@@ -222,19 +222,21 @@ class ChartClass {
   constructor() {
     this.div = document.getElementById("chart");
     this.canvas = document.getElementById("myChart");
+    this.chartUpdateInterval = 5000;
     this.init();
   }
-  init() {
+  async init() {
+    await this.getChartData();
     // create chart with chart.js
     const ctx = this.canvas.getContext("2d");
-    const myChart = new Chart(ctx, {
+    this.myChart = new Chart(ctx, {
       type: "line",
       data: {
-        labels: ["Red", "Blue", "Yellow", "Green", "Purple", "Orange"],
+        labels: this.xData,
         datasets: [
           {
-            label: "# of Votes",
-            data: [12, 19, 3, 5, 2, 3],
+            label: "Rate of Mass",
+            data: this.yData,
             backgroundColor: ["rgba(255, 99, 132, 0.2)"],
             borderColor: ["rgba(255, 99, 132, 1)"],
             borderWidth: 1,
@@ -242,6 +244,8 @@ class ChartClass {
         ],
       },
       options: {
+        responsive: true,
+        maintainAspectRatio: false, 
         scales: {
           y: {
             beginAtZero: true,
@@ -249,8 +253,23 @@ class ChartClass {
         },
       },
     });
+    this.update();
   }
-  update() {}
+  async update() {
+    console.log("updating chart");
+    // get x and y data
+    await this.getChartData();
+    // update chart
+    this.myChart.data.labels = this.xData;
+    this.myChart.data.datasets[0].data = this.yData;
+    setTimeout(this.update.bind(this), this.chartUpdateInterval);
+  }
+  async getChartData() {
+    bt.getChartData().then((data) => {
+      this.xData = data.x;
+      this.yData = data.y;
+    });
+  }
 }
 //create a global settings instance
 const settings = new SettingsPanel();

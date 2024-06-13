@@ -2,12 +2,44 @@ body {
   margin: 0;
   font-family: Arial, sans-serif;
 }
-
-.container {
+.column {
   display: flex;
   flex-direction: column;
 }
-
+.row {
+  display: flex;
+  flex-direction: row;
+}
+#mainColumn {
+  height: 100vh;
+}
+#topRow {
+  height: 93vh;
+}
+#bottom-bar {
+  height: 5vh;
+}
+.main-content {
+  display: flex;
+  flex-direction: column;
+  width: 80vw;
+  padding: 20px;
+}
+#chart {
+  height: 100%;
+}
+.right-sidebar {
+  position: fixed;
+  top: 0;
+  right: 0;
+  background-color: #444;
+  color: white;
+  width: 12vw;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 10px;
+}
 .top-menu-bar {
   display: flex;
   background-color: #333;
@@ -31,19 +63,6 @@ body {
   width: 100%;
 }
 
-.right-sidebar {
-  position: fixed;
-  top: 0;
-  right: 0;
-  background-color: #444;
-  color: white;
-  width: 200px;
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-  padding: 10px;
-}
-
 .sidebar-button {
   background-color: #555;
   color: white;
@@ -55,13 +74,6 @@ body {
 
 .sidebar-button:hover {
   background-color: #666;
-}
-
-.main-content {
-  flex: 1;
-  padding: 20px;
-  margin-right: 200px; /* Same as the width of the right sidebar */
-  margin-bottom: 40px; /* Space for the bottom info bar */
 }
 
 .popup {

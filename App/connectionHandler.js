@@ -36,11 +36,11 @@ class ConnectionHandler {
           console.error(err);
           return;
         }
+        // biome-ignore lint/complexity/noForEach: <explanation>
         ports.forEach(async (port) => {
           // check if manufacturer is "Microsoft" and friendlyName contains "Bluetooth"
           if (
-            port.manufacturer &&
-            port.manufacturer.includes("Microsoft") &&
+            port.manufacturer?.includes("Microsoft") &&
             port.pnpId.includes("BTHENUM")
           ) {
             //   console.log("found bluetooth port", port);
@@ -100,6 +100,7 @@ class ConnectionHandler {
       sp.on("data", (data) => {
         // check if port belongs to Smart-Scale
         console.log(data.toString());
+        this.handleData(data);
       });
 
       sp.on("error", (err) => {
@@ -107,6 +108,14 @@ class ConnectionHandler {
         resolve();
       });
     });
+  }
+  handleData(data) {
+    const strData = data.toString();
+    const dataArr = strData.split(":");
+    if (dataArr.length === 2) {
+      this.xData.push(dataArr[0]);
+      this.yData.push(dataArr[1]);
+    }
   }
   //  function that log all open ports
   closeAllPorts() {
@@ -123,6 +132,9 @@ class ConnectionHandler {
   connectSmartScale() {
     console.log("connecting to Smart-Scale", this.smartScalePort.path);
     this.openPort(this.smartScalePort);
+  }
+  getData() {
+    return { x: this.xData, y: this.yData };
   }
 }
 
