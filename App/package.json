@@ -5,7 +5,8 @@
   "main": "main.js",
   "scripts": {
     "wp-build": "webpack --mode production",
-    "start": "concurrently \"npm run wp-dev\" \"electron . start --trace-warnings\""
+    "start": "concurrently \"npm run wp-dev\" \"electron . start --trace-warnings\"",
+    "build": "concurrently \"npm run wp-build\" \"electron-builder\""
   },
   "author": "",
   "license": "ISC",
