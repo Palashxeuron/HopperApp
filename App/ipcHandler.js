@@ -18,20 +18,17 @@ class IpcHandler {
     ipcMain.handle("refresh-ports", (event, route) => {
       return this.connectionHandler.listSerialPorts();
     });
+    ipcMain.handle("start-test", (event, route) => {
+      return this.connectionHandler.startTest();
+    });
     ipcMain.handle("list-ports", (event, route) => {
       return {
         ports: this.connectionHandler.ports,
         html: this.connectionHandler.tableHTML,
       };
     });
-    ipcMain.handle("get-smart-scale-port", async (event, route) => {
-      return await this.connectionHandler.checkPorts();
-    });
-    ipcMain.handle("connect-port", (event, route) => {
-      return this.connectionHandler.openPort(port);
-    });
-    ipcMain.handle("disconnect-port", (event, route) => {
-      return this.connectionHandler.closePort(port);
+    ipcMain.handle("connect-smart-scale", (event, route) => {
+      return this.connectionHandler.connectSmartScale();
     });
     ipcMain.handle("get-chart-data", (event, route) => {
       return this.connectionHandler.getData();

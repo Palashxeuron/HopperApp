@@ -157,6 +157,9 @@ String endMarker_Ard = ":oniudra";
 String startMarker_Esp = "esp32:";
 String endMarker_Esp = ":23pse";
 bool debug = true;
+bool connected = false;
+int weight = 0;
+bool sendWeights = false;
 
 void setup()
 {
@@ -177,6 +180,7 @@ void loop()
   readLoadCell(); // read from load cell
   readEsp();      // read from esp32
   readSerial();   // read from serial monitor
+  updateScreen();
 }
 
 void turnOnDisplay()
@@ -250,10 +254,13 @@ void readLoadCell()
   {
     // Read the data from the sensor
     const int sensorRead = scale.get_units(10);
+    weight = sensorRead;
     String str = "Weight: " + String(sensorRead) + " g";
     log(str);
-    sendToESP32(str);
-    displayText(str);
+    if (connected && sendWeights)
+    {
+      sendToESP32(str);
+    }
   }
 }
 void readEsp() // read from esp32
@@ -279,18 +286,32 @@ void readSerial() // read from serial monitor
 
 void handleEsp32Request(String data)
 {
+    log("esp32: " + data);
+  
   if (isEspMessage(data)) // check if data contains the start and end marker
   {
     String request = extractEspMessage(data);
     log("esp32: " + request);
     // handshake
-    if(request == "Are you Smart-Scale"){
+    if (request == "Are you Smart-Scale")
+    {
       log("Yes, I am Smart-Scale");
       sendToESP32("Yes, I am Smart-Scale");
+      connected = true;
+    }
+    if(request == "connect"){
+      connected = true;
+    }
+    if (request == "disconnect")
+    {
+      connected = false;
     }
     if (request == "getWeight")
     {
       readLoadCell();
+    }
+    if(request == "start sending weights"){
+      sendWeights = true;
     }
     if (request == "tare")
     {
@@ -383,20 +404,29 @@ void drawchar(void)
   display.display();
   delay(1);
 }
-void displayText(const String &text)
+void displayText(const String &text, const int x, const int y)
 {
   // text display tests
   display.setTextSize(1);
   display.setTextColor(SH110X_WHITE);
-  display.setCursor(0, 0);
+  display.setCursor(x, y);
   display.println(text);
   // display.setTextColor(SH110X_BLACK, SH110X_WHITE); // 'inverted' text
   // display.println(3.141592);
   // display.setTextSize(2);
   // display.setTextColor(SH110X_WHITE);
   // display.print("0x"); display.println(0xDEADBEEF, HEX);
-  display.display();
+}
+void updateScreen()
+{
+  // Clear the display
   display.clearDisplay();
+  // Draw the bitmap
+  // display.drawBitmap(0, 0, bitmap_bluetooth, 48, 48, SH110X_WHITE);
+  displayText("Weight: " + String(weight) + " g", 0, 0);
+  displayText("master: " + String(connected ? "connected" : "disconnected"), 0, 20);
+  // Display the content on the OLED
+  display.display();
 }
 
 void log(String data)

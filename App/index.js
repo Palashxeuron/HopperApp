@@ -245,7 +245,7 @@ class ChartClass {
       },
       options: {
         responsive: true,
-        maintainAspectRatio: false, 
+        maintainAspectRatio: false,
         scales: {
           y: {
             beginAtZero: true,
@@ -285,6 +285,14 @@ const bottomBarItems = [
       } else {
         console.log("This device does not support Bluetooth");
       }
+      bt.connectSmartScale().then((response) => {
+        console.log("response", response);
+        if (response === "connected") {
+          console.log("connected to Smart-Scale");
+          // make connect button green
+          document.getElementById("Connect").style.backgroundColor = "green";
+        }
+      });
     },
     position: 1,
   },
@@ -293,7 +301,11 @@ const bottomBarItems = [
     placeholder: "start",
     onHover: "Start test",
     onClick: "button",
-    button: async () => {},
+    button: async () => {
+      bt.startTest().then((response) => {
+        console.log("response", response);
+      });
+    },
     position: 2,
   },
 ];
