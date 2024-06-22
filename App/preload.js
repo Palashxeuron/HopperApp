@@ -10,3 +10,9 @@ contextBridge.exposeInMainWorld("bt", {
   connectSmartScale: () => ipcRenderer.invoke("connect-smart-scale"),
   startTest: () => ipcRenderer.invoke("start-test"),
 });
+
+
+contextBridge.exposeInMainWorld('logger', {
+  logMessage: (level, message) => ipcRenderer.send('log-message', { level, message }),
+  onLogMessage: (callback) => ipcRenderer.on('log-message', (event, message) => callback(message))
+});

@@ -27,6 +27,7 @@ class RightBar {
     this.items = rightBarItems;
   }
   create() {
+    // biome-ignore lint/complexity/noForEach: <explanation>
     this.items.forEach((item) => {
       const button = new BarItem(item, this.parent).create();
       document.getElementById("right-bar").appendChild(button);
@@ -40,18 +41,20 @@ class BarItem {
     this.popup = null;
   }
   create() {
-    let button = document.createElement("button");
+    const button = document.createElement("button");
     button.className = "sidebar-button";
-    if (this.item.onClick === "popup") {
+    if (this.item.type === "popup") {
       this.popup = new Popup(this.item.popup, this.parent);
-      this.popup.create();
-      button.onclick = () => this.popup.openPopup();
+      button.onclick = () => this.togglePopup();
     }
-    if (this.item.onClick === "button") {
+    if (this.item.type === "button") {
       button.onclick = this.item.button;
     }
     button.innerHTML = this.item.placeholder;
     return button;
+  }
+  togglePopup() {
+    this.popup.isOpen ? this.popup.closePopup() : this.popup.openPopup();
   }
 }
 class Popup {
@@ -59,41 +62,48 @@ class Popup {
     this.parent = homePage;
     this.popupItem = popupJson;
     this.popup = null;
+    this.create();
   }
   async create() {
     this.popup = document.createElement("div");
     this.popup.id = this.popupItem.id;
     this.popup.className = "popup";
+
     const popupContent = document.createElement("div");
     popupContent.className = "popup-content";
+
     const close = document.createElement("span");
     close.className = "close";
     close.innerHTML = "&times;";
     close.onclick = () => this.closePopup();
+
     const title = document.createElement("h2");
     title.innerHTML = this.popupItem.title;
+
     const content = document.createElement("p");
-    if (typeof this.popupItem.content === "function") {
-      content.innerHTML = await this.popupItem.content();
-    } else {
-      content.innerHTML = this.popupItem.content;
-    }
+
     popupContent.appendChild(close);
     popupContent.appendChild(title);
     popupContent.appendChild(content);
+
     this.popup.appendChild(popupContent);
+
     document.getElementById("popups").appendChild(this.popup); // append to popups
 
-    if (this.popupItem.todo) {
-      await this.popupItem.todo();
+    if (this.popupItem.onCreate) {
+      await this.popupItem.onCreate();
     }
   }
   openPopup(id = this.popupItem.id) {
+    this.isOpen = true;
+    this.popupItem.onOpen();
     document.getElementById(id).style.display = "block";
   }
 
   closePopup(id = this.popupItem.id) {
+    this.isOpen = false;
     document.getElementById(id).style.display = "none";
+    this.popupItem.onClose();
   }
 }
 class ComPortTable {
@@ -186,8 +196,10 @@ class SettingsPanel {
     settingsPanel.appendChild(portLabel);
     settingsPanel.appendChild(savePathLabel);
     settingsPanel.appendChild(saveSettingsButton);
-
-    return settingsPanel;
+    document
+      .querySelector("#settings .popup-content")
+      .appendChild(settingsPanel);
+    this.afterCreate();
   }
   afterCreate() {
     // add listener to dropdown to update selected port
@@ -271,6 +283,55 @@ class ChartClass {
     });
   }
 }
+class LoggerClass {
+  constructor() {
+    this.logs = ["logger initialized"];
+    this.init();
+    this.setupLogger();
+  }
+  init() {
+    this.popupContent = document.querySelector("#logsPopup .popup-content");
+    this.logsContainer = document.getElementById("logsContainer");
+  }
+  setupLogger() {
+    this.init();
+    // Listen for log messages from the main process
+    logger.onLogMessage((message) => {
+      this.logs.push(message);
+    });
+
+    // Example usage: send a log message to the main process
+    logger.logMessage(
+      "info",
+      "This is a log message from the renderer process."
+    );
+  }
+  onCreate() {
+    const logsContainer = document.createElement("div");
+    logsContainer.id = "logsContainer";
+    document
+      .querySelector("#logsPopup .popup-content")
+      .appendChild(logsContainer);
+    // console.log(document.querySelector("#logsPopup .popup-content"));
+    this.logsContainer = logsContainer;
+  }
+  async render() {
+    this.init();
+    this.logsContainer.innerHTML = "";
+    // biome-ignore lint/complexity/noForEach: <explanation>
+    this.logs.forEach((log) => {
+      const p = document.createElement("p");
+      p.textContent = log;
+      this.logsContainer.appendChild(p);
+    });
+  }
+  dispose() {
+    this.init();
+    // remove all <p> elements from popupContent
+    this.popupContent.innerHTML = "";
+  }
+}
+const loggerClass = new LoggerClass();
 //create a global settings instance
 const settings = new SettingsPanel();
 const bottomBarItems = [
@@ -278,7 +339,7 @@ const bottomBarItems = [
     id: "Connect",
     placeholder: "connect",
     onHover: "Connect to Smart-Scale",
-    onClick: "button",
+    type: "button",
     button: async () => {
       if ("bluetooth" in navigator) {
         console.log("This device supports Bluetooth");
@@ -300,7 +361,7 @@ const bottomBarItems = [
     id: "start",
     placeholder: "start",
     onHover: "Start test",
-    onClick: "button",
+    type: "button",
     button: async () => {
       bt.startTest().then((response) => {
         console.log("response", response);
@@ -314,12 +375,17 @@ const rightBarItems = [
     id: "logs",
     placeholder: "Logs",
     onHover: "Open Logs",
-    onClick: "popup",
+    type: "popup",
     popup: {
-      id: "logs",
-      onClose: "logs",
+      id: "logsPopup",
       title: "Logs",
-      content: "This is the content of Logs.",
+      onClose: () => {},
+      onOpen: async () => {
+        await loggerClass.render();
+      },
+      onCreate: async () => {
+        loggerClass.onCreate();
+      },
     },
     position: 1,
   },
@@ -327,17 +393,14 @@ const rightBarItems = [
     id: "settings",
     placeholder: "Settings",
     onHover: "Open Settings",
-    onClick: "popup",
+    type: "popup",
     popup: {
       id: "settings",
-      onClose: "settings",
       title: "Settings",
-      content: async () => {
-        const container = await settings.create();
-        return container.outerHTML;
-      },
-      todo: async () => {
-        settings.afterCreate();
+      onClose: () => {},
+      onOpen: async () => {},
+      onCreate: async () => {
+        await settings.create();
       },
     },
     position: 2,
@@ -346,15 +409,17 @@ const rightBarItems = [
     id: "coms",
     placeholder: "COM ports",
     onHover: "Show COM ports",
-    onClick: "popup",
+    type: "popup",
     popup: {
       id: "coms",
-      onClose: "coms",
       title: "COM ports",
-      content: async () => {
+      onOpen: () => {},
+      onClose: () => {},
+      onCreate: async () => {
         const comPortTable = new ComPortTable();
         const container = await comPortTable.create();
-        return container.outerHTML;
+        document.querySelector("#coms .popup-content").appendChild(container);
+        // return container.outerHTML;
       },
     },
     position: 3,
@@ -363,15 +428,24 @@ const rightBarItems = [
     id: "about",
     placeholder: "About",
     onHover: "Open About",
-    onClick: "popup",
+    type: "popup",
     popup: {
       id: "about",
-      onClose: "about",
       title: "About",
-      content: "This is the content of about.",
+      onClose: () => {},
+      onOpen: async () => {},
     },
     position: 10,
   },
 ];
+
 const chart = new ChartClass();
 const homePage = new HomePage();
+
+
+function getAboutContent() {
+  const container = document.createElement("div");
+  container.id = "about-container";
+  
+  return "This is a Smart-Scale application";
+} 

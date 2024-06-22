@@ -286,12 +286,12 @@ void readSerial() // read from serial monitor
 
 void handleEsp32Request(String data)
 {
-    log("esp32: " + data);
-  
+  // log("esp32: " + data);
+
   if (isEspMessage(data)) // check if data contains the start and end marker
   {
     String request = extractEspMessage(data);
-    log("esp32: " + request);
+    // log("esp32: " + request);
     // handshake
     if (request == "Are you Smart-Scale")
     {
@@ -299,7 +299,8 @@ void handleEsp32Request(String data)
       sendToESP32("Yes, I am Smart-Scale");
       connected = true;
     }
-    if(request == "connect"){
+    if (request == "connect")
+    {
       connected = true;
     }
     if (request == "disconnect")
@@ -310,7 +311,8 @@ void handleEsp32Request(String data)
     {
       readLoadCell();
     }
-    if(request == "start sending weights"){
+    if (request == "start sending weights")
+    {
       sendWeights = true;
     }
     if (request == "tare")

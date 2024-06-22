@@ -9,11 +9,12 @@ class ConnectionHandler {
     this.init();
     this.smartScalePort = undefined;
     this.sp = undefined;
-    this.retry = 0;
-    this.maxRetry = 1;
+    this.isPaired = false;
+    this.exp32UID = "&4022D8EADB3E";
   }
-  init() {
-    this.listSerialPorts();
+  async init() {
+    await this.listSerialPorts();
+    await this.findScalePort();
   }
   async listSerialPorts() {
     try {
@@ -29,10 +30,7 @@ class ConnectionHandler {
       throw err;
     }
   }
-
-  // function to open each port and send a message and log the response
-  async checkPorts() {
-    this.checkingPorts = true;
+  async findScalePort() {
     // console.log(this.smartScalePort ? this.smartScalePort.path : "no port yet");
     try {
       this.ports = await SerialPort.list();
@@ -42,81 +40,24 @@ class ConnectionHandler {
         if (
           port.manufacturer?.includes("Microsoft") &&
           port.pnpId.includes("BTHENUM") &&
-          port.pnpId.includes("&4022D8EADB3E")
+          port.pnpId.includes(this.exp32UID)
         ) {
-          // await this.checkPort(port);
+          this.isPaired = true;
           this.smartScalePort = port;
+          console.log("Smart-Scale is PAIRED");
+          console.log("Smart-Scale found", this.smartScalePort.path);
+        } else {
+          this.isPaired = false;
+          console.log("Smart-Scale is NOT PAIRED");
         }
       }
     } catch (err) {
-      console.error("Error listing ports:", err);
-      return `Error listing ports: ${err}`;
-    } finally {
-      this.checkingPorts = false;
+      console.error("Error finding scale port:", err);
+      return `Error finding scale port: ${err}`;
     }
   }
-  // checkPort(port) {
-  //   return new Promise((resolve) => {
-  //     let portChecked = false;
-  //     const sp = new SerialPort({ path: port.path, baudRate: 9600 });
 
-  //     this.openPorts.push(sp);
 
-  //     sp.on("open", () => {
-  //       console.log("Port opened:", port.path);
-  //       sp.on("data", (data) => {
-  //         const response = data.toString();
-  //         if (response.includes("Yes, I am Smart-Scale")) {
-  //           this.smartScalePort = port;
-  //           console.log("Smart-Scale found:", port.path);
-  //         } else {
-  //           console.log("Not Smart-Scale:", port.path, response);
-  //         }
-  //         portChecked = true;
-  //         closePort();
-  //       });
-
-  //       sp.on("error", (err) => {
-  //         console.error("Error on port:", port.path, err.message);
-  //         portChecked = true;
-  //         closePort();
-  //       });
-  //     });
-  //     app.on("before-quit", () => {
-  //       sp.write("master:disconnect:retsam\n");
-  //     });
-  //     sp.write("master:Are you Smart-Scale:retsam\n", (err) => {
-  //       if (err) {
-  //         console.error("Error writing to port:", port.path, err.message);
-  //         closePort();
-  //       }
-  //     });
-
-  //     const closePort = () => {
-  //       resolve();
-  //     };
-  //     setTimeout(() => {
-  //       if (!portChecked) {
-  //         closePort();
-  //       }
-  //     }, 5000);
-  //   });
-  // }
-  async startTest() {
-    this.smartScalePort.write(
-      "master:start sending weights:retmas\n",
-      (err) => {
-        if (err) {
-          console.error(
-            "Error writing to port:",
-            this.smartScalePort.path,
-            err.message
-          );
-          return false;
-        }
-      }
-    );
-  }
   async openPort() {
     try {
       console.log("opening port", this.smartScalePort.path);
@@ -131,16 +72,7 @@ class ConnectionHandler {
         }
       }
       this.sp.on("open", () => {
-        this.sp.write("master:connect:retmas\n", (err) => {
-          if (err) {
-            console.error(
-              "Error writing to port:",
-              this.smartScalePort.path,
-              err.message
-            );
-            return false;
-          }
-        });
+        this.sendCommand("connect");
       });
 
       this.sp.on("data", (data) => {
@@ -178,13 +110,20 @@ class ConnectionHandler {
 
   async connectSmartScale() {
     try {
-      await this.checkPorts();
+      await this.findScalePort();
       if (await this.areThereAnyBluetoothPorts()) {
         console.log("Bluetooth ports found");
         if (this.smartScalePort !== undefined) {
           console.log("connecting to Smart-Scale", this.smartScalePort?.path);
-          const portOpen = await this.openPort();
-          return portOpen ? "Connected" : "Error";
+          if (this.sp?.isOpen) {
+            this.sendCommand("connect");
+            return "Connected";
+            // biome-ignore lint/style/noUselessElse: <explanation>
+          } else {
+            const portOpen = await this.openPort();
+            return portOpen ? "Connected" : "Error";
+          }
+          // console.log(portOpen);
         }
         throw new Error("smart scale port undefined");
       }
@@ -203,6 +142,28 @@ class ConnectionHandler {
       );
     });
     return present;
+  }
+  async startTest() {
+    this.smartScalePort.write(
+      "master:start sending weights:retmas\n",
+      (err) => {
+        if (err) {
+          console.error(
+            "Error writing to port:",
+            this.smartScalePort.path,
+            err.message
+          );
+          return false;
+        }
+      }
+    );
+  }
+  sendCommand(command) {
+    this.sp.write(`master:${command}:retsam\n`, (err) => {
+      if (err) {
+        console.error("Error writing to port:", this.smartScalePort.path, err);
+      }
+    });
   }
   getData() {
     return { x: this.xData, y: this.yData };
