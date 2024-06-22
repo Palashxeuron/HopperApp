@@ -21,6 +21,9 @@ class IpcHandler {
     ipcMain.handle("start-test", (event, route) => {
       return this.connectionHandler.startTest();
     });
+    ipcMain.handle("is-paired", (event, route) => {
+      return this.connectionHandler.isPaired;
+    });
     ipcMain.handle("list-ports", (event, route) => {
       return {
         ports: this.connectionHandler.ports,

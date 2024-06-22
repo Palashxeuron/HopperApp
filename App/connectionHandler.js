@@ -31,7 +31,7 @@ class ConnectionHandler {
     }
   }
   async findScalePort() {
-    // console.log(this.smartScalePort ? this.smartScalePort.path : "no port yet");
+    console.log("here");
     try {
       this.ports = await SerialPort.list();
 
@@ -56,8 +56,6 @@ class ConnectionHandler {
       return `Error finding scale port: ${err}`;
     }
   }
-
-
   async openPort() {
     try {
       console.log("opening port", this.smartScalePort.path);
