@@ -18,6 +18,7 @@ class ConnectionHandler {
   async init() {
     await this.listSerialPorts();
     await this.findScalePort();
+    await this.connectSmartScale();
   }
   async listSerialPorts() {
     try {
@@ -38,20 +39,24 @@ class ConnectionHandler {
       this.ports = await SerialPort.list();
 
       for (const port of this.ports) {
+        // console.log(port.pnpId.includes("BTHENUM"));
+        // console.log(port.pnpId.includes(this.exp32UID));
+
         // check if manufacturer is "Microsoft" and friendlyName contains "Bluetooth"
         if (
           port.manufacturer?.includes("Microsoft") &&
           port.pnpId.includes("BTHENUM") &&
           port.pnpId.includes(this.exp32UID)
         ) {
+          console.log(port.pnpId);
           this.isPaired = true;
           this.smartScalePort = port;
           console.log("Smart-Scale is PAIRED");
           console.log("Smart-Scale found", this.smartScalePort.path);
-        } else {
-          this.isPaired = false;
-          console.log("Smart-Scale is NOT PAIRED");
+          return;
         }
+        this.isPaired = false;
+        console.log("Smart-Scale is NOT PAIRED");
       }
     } catch (err) {
       console.error("Error finding scale port:", err);
@@ -74,9 +79,11 @@ class ConnectionHandler {
       this.sp.on("data", (data) => {
         // check if port belongs to Smart-Scale
         this.logger.log(data.toString());
-        this.handleData(data);
       });
-
+      this.sp.on("close", () => {
+        console.log("Port closed");
+        this.logger.log("Port closed");
+      });
       this.sp.on("error", (err) => {
         console.error(
           "Error on port",
@@ -90,29 +97,22 @@ class ConnectionHandler {
         this.sendCommand("disconnect");
       });
     } catch (err) {
-      console.error(err);
+      console.error("error opening port", err);
     }
   }
-  handleData(data) {
-    const strData = data.toString();
-    const dataArr = strData.split(":");
-    if (dataArr.length === 2) {
-      // this.xData.push(dataArr[0]);
-      // this.yData.push(dataArr[1]);
-    }
-  }
-
   async connectSmartScale() {
     try {
       await this.findScalePort();
       if (this.isPaired && this.smartScalePort !== undefined) {
         console.log("connecting to Smart-Scale at", this.smartScalePort?.path);
         if (this.sp?.isOpen) {
-          console.log("Port already open");
-          this.sendCommand("connect");
-        } else {
-          await this.openPort();
+          this.sp.close((err) => {
+            console.log("port closed", err);
+          });
+          this.sp = undefined;
+          console.log("Port already open so closed it first");
         }
+        await this.openPort();
       } else {
         console.error("smart scale port undefined");
       }
@@ -153,7 +153,7 @@ class ConnectionHandler {
         }
       });
       this.sp.once("data", (data) => {
-        console.log("data", data.toString());
+        // console.log("data", data.toString());
         callback(data.toString());
       });
     } catch (err) {
@@ -162,6 +162,10 @@ class ConnectionHandler {
   }
   tare() {
     this.sendCommand("tare");
+  }
+  calibrate(value) {
+    console.log("calibrating with value", value);
+    this.sendCommand(`calibrate:${value}`);
   }
   getData() {
     return { x: this.xData, y: this.yData };

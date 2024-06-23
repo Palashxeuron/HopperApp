@@ -10,6 +10,18 @@ body {
   display: flex;
   flex-direction: row;
 }
+#calibration-panel{
+  display: flex;
+  flex-direction: column;
+  min-height: 20vh;
+  justify-content: space-between;
+}
+#weight-input{
+  width: 50%;
+  margin-left: 1%;
+  border-width: 2px;
+  /* padding-left: 20%; */
+}
 #mainColumn {
   height: 100vh;
 }

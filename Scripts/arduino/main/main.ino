@@ -206,38 +206,24 @@ void turnOnLoadCell(void)
   // you need to wait for the sensor to be ready and wait for the OLED to power up
   delay(500);
 }
-void calibrateLoadCell()
+void calibrateLoadCell(int knownWeight)
 {
   if (scale.is_ready())
   {
-    scale.set_scale();
-    log("Tare... remove any weights from the scale.");
-    delay(5000);
-    scale.tare();
-    log("Tare done...");
-    log("Place a known weight on the scale and enter the weight in grams:");
-
-    // Wait for the user to enter the known weight
-    while (!Serial.available())
-    {
-      // Do nothing, just wait
-    }
-    String weightStr = Serial.readStringUntil('\n');
-    float knownWeight = weightStr.toFloat();
-
-    Serial.print("Using known weight: ");
-    log(knownWeight);
-    delay(5000);
+    // scale.set_scale();
+    log("Using known weight: " + String(knownWeight) + " g");
+    sendToESP32("Using known weight: " + String(knownWeight) + " g");
 
     long reading = scale.get_units(10);
-    Serial.print("Result: ");
-    log(reading);
+    log("Result: " + String(reading) + " g");
+    sendToESP32("Result: " + String(reading) + " g");
 
     float calibrationFactor = reading / knownWeight;
-    Serial.print("Calibration factor is: ");
-    log(calibrationFactor);
+    log("Calibration factor is: " + String(calibrationFactor));
+    sendToESP32("Calibration factor is: " + String(calibrationFactor));
 
     scale.set_scale(calibrationFactor); // Set the new calibration factor
+    sendToESP32("ACK: calibration done, calibration factor: " + String(calibrationFactor));
     LOADCELL_CALIBRATED = true;
   }
   else
@@ -328,9 +314,10 @@ void handleEsp32Request(String data)
       scale.tare();
       sendToESP32("ACK: tarred");
     }
-    if (request == "calibrate")
+    if (request.indexOf("calibrate") >= 0)
     {
-      calibrateLoadCell();
+      int weight = getCalibrationValue(request);
+      calibrateLoadCell(weight);
       sendToESP32("ACK: calibration started");
     }
   }
@@ -439,6 +426,14 @@ void updateScreen()
   displayText("master: " + String(connected ? "connected" : "disconnected"), 0, 20);
   // Display the content on the OLED
   display.display();
+}
+
+int getCalibrationValue(String request){
+// extract value from string calibrate:100
+  int startIndex = request.indexOf(":") + 1;
+  int endIndex = request.length();
+  String value = request.substring(startIndex, endIndex);
+  return value.toInt();
 }
 
 void log(String data)

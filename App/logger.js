@@ -1,23 +1,8 @@
-const { createLogger, format, transports } = require("winston");
 const { ipcMain } = require("electron");
 class Logger {
   constructor(mainWindow) {
-    // Create a logger
-    this.logger = createLogger({
-      level: "info",
-      format: format.combine(
-        format.timestamp(),
-        format.printf(
-          ({ timestamp, level, message }) =>
-            `${timestamp} [${level}]: ${message}`
-        )
-      ),
-      transports: [
-        new transports.Console(),
-        new transports.File({ filename: "app.log" }),
-      ],
-    });
     this.mainWindow = mainWindow;
+    this.debug = false;
     this.init();
   }
   init() {
@@ -28,34 +13,31 @@ class Logger {
   }
   log(message, level = "info") {
     if (message && message !== "") {
-      this.logger.log({ level, message });
+      // this.logger.log({ level, message });
       this.mainWindow.webContents.send(
         "log-message",
         `${new Date().toISOString()} [${level}]: ${message}`
       );
+      this.debug
+        ? console.log(`${new Date().toISOString()} [${level}]: ${message}`)
+        : null;
     }
   }
+  error(message) {
+    this.log(message, "error");
+  }
+  info(message) {
+    this.log(message, "info");
+  }
+  warn(message) {
+    this.log(message, "warn");
+  }
+  debug(message) {
+    this.log(message, "debug");
+  }
+  verbose(message) {
+    this.log(message, "verbose");
+  }
 }
-// const logger = createLogger({
-//   level: "info",
-//   format: format.combine(
-//     format.timestamp(),
-//     format.printf(
-//       ({ timestamp, level, message }) => `${timestamp} [${level}]: ${message}`
-//     )
-//   ),
-//   transports: [
-//     new transports.Console(),
-//     new transports.File({ filename: "app.log" }),
-//   ],
-// });
-// // Function to log messages and send them to renderer
-// function log(level, message) {
-//   logger.log({ level, message });
-//   mainWindow.webContents.send(
-//     "log-message",
-//     `${new Date().toISOString()} [${level}]: ${message}`
-//   );
-// }
 
 module.exports = { Logger };

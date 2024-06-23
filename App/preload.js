@@ -16,6 +16,7 @@ contextBridge.exposeInMainWorld("bt", {
   startTest: () => ipcRenderer.invoke("start-test"),
   isPaired: () => ipcRenderer.invoke("is-paired"),
   tare: () => ipcRenderer.invoke("tare"),
+  calibrate: (value) => ipcRenderer.invoke("calibrate", value),
 });
 
 contextBridge.exposeInMainWorld("logger", {

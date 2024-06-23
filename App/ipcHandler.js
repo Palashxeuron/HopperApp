@@ -41,6 +41,9 @@ class IpcHandler {
     ipcMain.handle("tare", (event, route) => {
       return this.connectionHandler.tare();
     });
+    ipcMain.handle("calibrate", (event, value) => {
+      return this.connectionHandler.calibrate(value);
+    });
     ipcMain.handle("get-chart-data", (event, route) => {
       return this.connectionHandler.getData();
     });

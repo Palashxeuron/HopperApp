@@ -8,11 +8,13 @@ import {
   SettingsPanel,
   ChartClass,
   LoggerClass,
+  CalibrationPopup,
 } from "./rendererModules.js";
 
 const loggerClass = new LoggerClass();
 //create a global settings instance
 const settings = new SettingsPanel();
+const calibrationPopup = new CalibrationPopup();
 const bottomBarItems = [
   {
     id: "paired",
@@ -61,17 +63,7 @@ const bottomBarItems = [
     onClick: async () => {
       if ("bluetooth" in navigator) {
         console.log("This device supports Bluetooth");
-
-        bt.connectSmartScale().then((response) => {
-          console.log("response", response);
-          if (response === "connected") {
-            console.log("connected to Smart-Scale");
-            // make connect button green
-            document.getElementById("connect").style.backgroundColor = "green";
-          } else {
-            document.getElementById("connect").style.backgroundColor = "red";
-          }
-        });
+        bt.connectSmartScale();
       } else {
         console.log("This device does not support Bluetooth");
         document.getElementById("connect").style.backgroundColor = "red";
@@ -79,32 +71,6 @@ const bottomBarItems = [
     },
     onCreate: async () => {},
     position: 1,
-  },
-  {
-    id: "tare",
-    placeholder: "Tare",
-    onHover: "Tare",
-    type: "button",
-    onClick: async () => {
-      bt.tare().then((response) => {
-        console.log("response", response);
-      });
-    },
-    onCreate: async () => {},
-    position: 2,
-  },
-  {
-    id: "start",
-    placeholder: "start",
-    onHover: "Start test",
-    type: "button",
-    onClick: async () => {
-      bt.startTest().then((response) => {
-        console.log("response", response);
-      });
-    },
-    onCreate: async () => {},
-    position: 2,
   },
 ];
 const rightBarItems = [
@@ -132,7 +98,7 @@ const rightBarItems = [
     onHover: "Open Settings",
     type: "popup",
     popup: {
-      id: "settings",
+      id: "settingsPopup",
       title: "Settings",
       onClose: () => {},
       onOpen: async () => {},
@@ -148,18 +114,60 @@ const rightBarItems = [
     onHover: "Show COM ports",
     type: "popup",
     popup: {
-      id: "coms",
+      id: "comsPopup",
       title: "COM ports",
       onOpen: () => {},
       onClose: () => {},
       onCreate: async () => {
         const comPortTable = new ComPortTable();
         const container = await comPortTable.create();
-        document.querySelector("#coms .popup-content").appendChild(container);
+        document
+          .querySelector("#comsPopup .popup-content")
+          .appendChild(container);
         // return container.outerHTML;
       },
     },
     position: 3,
+  },
+  {
+    id: "tare",
+    placeholder: "Tare",
+    onHover: "Tare",
+    type: "button",
+    onClick: async () => {
+      bt.tare();
+    },
+    onCreate: async () => {},
+    position: 2,
+  },
+  {
+    id: "calibrate",
+    placeholder: "Calibrate",
+    onHover: "Calibrate",
+    type: "popup",
+    popup: {
+      id: "calibrationPopup",
+      title: "Calibrate Scale",
+      onOpen: () => {},
+      onClose: () => {},
+      onCreate: async () => {
+        calibrationPopup.create();
+      },
+    },
+    position: 2,
+  },
+  {
+    id: "start",
+    placeholder: "Start",
+    onHover: "Start test",
+    type: "button",
+    onClick: async () => {
+      bt.startTest().then((response) => {
+        console.log("response", response);
+      });
+    },
+    onCreate: async () => {},
+    position: 2,
   },
   {
     id: "about",
@@ -167,13 +175,15 @@ const rightBarItems = [
     onHover: "Open About",
     type: "popup",
     popup: {
-      id: "about",
+      id: "aboutPopup",
       title: "About",
       onClose: () => {},
       onOpen: async () => {},
       onCreate: async () => {
         const container = getAboutContent();
-        document.querySelector("#about .popup-content").appendChild(container);
+        document
+          .querySelector("#aboutPopup .popup-content")
+          .appendChild(container);
       },
     },
     position: 10,
@@ -181,7 +191,7 @@ const rightBarItems = [
 ];
 
 const chart = new ChartClass();
-const homePage = new HomePage(rightBarItems, bottomBarItems);
+const homePage = new HomePage(rightBarItems, bottomBarItems, loggerClass);
 
 function getAboutContent() {
   const container = document.createElement("div");
@@ -194,3 +204,7 @@ function getAboutContent() {
   `;
   return container;
 }
+
+// window.onload = async () => {
+//   bt.connectSmartScale();
+// };

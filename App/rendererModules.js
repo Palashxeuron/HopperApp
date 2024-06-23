@@ -1,14 +1,16 @@
 class HomePage {
-  constructor(rightBarItems, bottomBarItems) {
+  constructor(rightBarItems, bottomBarItems, logger) {
     this.rightBarItems = rightBarItems;
     this.bottomBarItems = bottomBarItems;
     this.bottomBar = new BottomBar(this);
     this.rightBar = new RightBar(this);
+    this.logger = logger;
     this.create();
   }
   create() {
     this.bottomBar.create();
     this.rightBar.create();
+    this.logger.init();
   }
 }
 class BottomBar {
@@ -200,7 +202,7 @@ class SettingsPanel {
     settingsPanel.appendChild(savePathLabel);
     settingsPanel.appendChild(saveSettingsButton);
     document
-      .querySelector("#settings .popup-content")
+      .querySelector("#settingsPopup .popup-content")
       .appendChild(settingsPanel);
     this.afterCreate();
   }
@@ -290,24 +292,39 @@ class LoggerClass {
   constructor() {
     this.logs = ["logger initialized"];
     this.init();
-    this.setupLogger();
   }
   init() {
     this.popupContent = document.querySelector("#logsPopup .popup-content");
     this.logsContainer = document.getElementById("logsContainer");
+    this.connectButton = document.querySelector(
+      "button#connect.sidebar-button"
+    );
+    // console.log("connectButton", this.connectButton);
+    this.setupLogger();
   }
   setupLogger() {
-    this.init();
     // Listen for log messages from the main process
     logger.onLogMessage((message) => {
       if (message && message.length > 0) {
         this.logs.push(message);
+        this.handleLogMessage();
         this.render();
       }
     });
-
-    // Example usage: send a log message to the main process
-    // logger.logMessage("This is a log message from the renderer process.");
+  }
+  handleLogMessage() {
+    const message = this.logs[this.logs.length - 1];
+    // console.log("message", message);
+    if (message.includes("ACK: connect")) {
+      // do something
+      console.log("connected");
+      this.connectButton.style.backgroundColor = "green";
+    }
+    if (message.includes("Port closed")) {
+      // do something
+      console.log("dis-connected");
+      this.connectButton.style.backgroundColor = "red";
+    }
   }
   onCreate() {
     const logsContainer = document.createElement("div");
@@ -319,7 +336,6 @@ class LoggerClass {
     this.logsContainer = logsContainer;
   }
   async render() {
-    this.init();
     this.logsContainer.innerHTML = "";
     // biome-ignore lint/complexity/noForEach: <explanation>
     this.logs.forEach((log) => {
@@ -329,12 +345,108 @@ class LoggerClass {
     });
   }
   dispose() {
-    this.init();
     // remove all <p> elements from popupContent
     this.popupContent.innerHTML = "";
   }
 }
+class CalibrationPopup {
+  constructor() {
+    this.popupId = "calibrationPopup";
+    this.init();
+    this.initDone = this.init();
+  }
+  isReady() {
+    return this.initDone;
+  }
+  async init() {}
+  // create settings panel that let user select port from a dropdown and select save path opening a file dialog
+  async create() {
+    // make sure init is done with isReady
+    await this.isReady();
+    const calibrationPanel = document.createElement("div");
+    calibrationPanel.id = "calibration-panel";
 
+    // Create title
+    const title = document.createElement("h2");
+    title.innerHTML = "Calibrate Scale";
+
+    // Create instruction label
+    const instructionLabel1 = document.createElement("label");
+    instructionLabel1.innerHTML =
+      "Put some known weight on the scale and enter it below in grams.";
+
+    // Create input wrapper
+    const weightInputWrapper = document.createElement("div");
+    weightInputWrapper.style.display = "flex";
+    weightInputWrapper.style.alignItems = "center";
+
+    // Create input for weight
+    const weightInput = document.createElement("input");
+    weightInput.type = "number";
+    weightInput.id = "weight-input";
+    weightInput.style.marginRight = "5px"; // Space between input and text
+
+    // Create text for units
+    const unitText = document.createElement("span");
+    unitText.innerHTML = "gms";
+
+    // Append input and unit text to wrapper
+    weightInputWrapper.appendChild(weightInput);
+    weightInputWrapper.appendChild(unitText);
+
+    // Create warning message
+    const warningMessage = document.createElement("p");
+    warningMessage.id = "warning-message";
+    warningMessage.style.color = "red";
+    warningMessage.style.display = "none";
+    warningMessage.innerHTML = "Please enter a valid number.";
+
+    // Add event listener to weight input to show warning if input is invalid
+    weightInput.addEventListener("input", () => {
+      if (isNaN(weightInput.value) || weightInput.value.trim() === "") {
+        warningMessage.style.display = "block";
+      } else {
+        warningMessage.style.display = "none";
+      }
+    });
+
+    // Create second instruction label
+    const instructionLabel2 = document.createElement("label");
+    instructionLabel2.innerHTML = "Press Calibrate to calibrate scale now.";
+
+    // Create calibrate button
+    const calibrateButton = document.createElement("button");
+    calibrateButton.innerHTML = "Calibrate";
+    calibrateButton.id = "calibrate-button";
+
+    // Append all elements to the calibration panel
+    // calibrationPanel.appendChild(title);
+    calibrationPanel.appendChild(instructionLabel1);
+    calibrationPanel.appendChild(warningMessage);
+    calibrationPanel.appendChild(weightInputWrapper);
+    calibrationPanel.appendChild(instructionLabel2);
+    calibrationPanel.appendChild(calibrateButton);
+    document
+      .querySelector("#calibrationPopup .popup-content")
+      .appendChild(calibrationPanel);
+    this.afterCreate();
+  }
+
+  afterCreate() {
+    this.calibrateButton = document.querySelector("#calibrate-button");
+    this.calibrateButton.onclick = async () => {
+      const weight = this.readWeight();
+      bt.calibrate(weight);
+    };
+  }
+  readWeight() {
+    const weightInput = document.getElementById("weight-input");
+    return weightInput.value;
+  }
+  closePopup(id = this.popupId) {
+    document.getElementById(id).style.display = "none";
+  }
+}
 export {
   HomePage,
   BottomBar,
@@ -345,4 +457,5 @@ export {
   SettingsPanel,
   ChartClass,
   LoggerClass,
+  CalibrationPopup,
 };
