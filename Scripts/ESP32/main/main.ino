@@ -25,8 +25,8 @@ esp_bd_addr_t new_address = {0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC}; // Replace wit
 // std::map<BTAddress, BTAdvertisedDeviceSet> btDeviceList;
 
 bool SETUP_COMPLETE = false;
-bool PAIRED = false;    // paired with a master device
-bool CONNECTED = false; // connected to a paired master device
+bool PAIRED = false;        // paired with a master device
+bool CONNECTED = false;     // connected to a paired master device
 bool APP_CONNECTED = false; // connected to a paired master device
 String startMarker_Ard = "arduino:";
 String endMarker_Ard = ":oniudra";
@@ -112,6 +112,7 @@ void Bt_Connect_Callback(esp_spp_cb_event_t event, esp_spp_cb_param_t *param)
     log("Client Disconnected");
     CONNECTED = false;
     // Do stuff if not connected
+    
   }
 }
 
@@ -135,7 +136,7 @@ void readSerialBT() // read from the bluetooth
   if (isMasterMessage(str))
   {
     str = extractMasterMessage(str);
-    log("received from master: " + str);
+    log("received from app: " + str);
     sendToArduino(str);
   }
 }
@@ -150,7 +151,14 @@ void readArduino() // read from the arduino
   if (isArduinoMessage(str))
   {
     str = extractArduinoMessage(str);
-    SerialBT.println(str);  // send to the bluetooth
+    if (str.indexOf("ACK:") >= 0)
+    {
+      sendToApp(str, "");
+    }
+    else
+    {
+      sendToApp(str, "DATA:"); // send to the bluetooth app
+    }
     log("arduino: " + str); // send to the serial monitor
   }
 }
@@ -182,7 +190,10 @@ String extractMasterMessage(String data)
   int endIndex = data.indexOf(endMarker_Master);
   return data.substring(startIndex, endIndex);
 }
-
+void sendToApp(String data, String type = "data")
+{
+  SerialBT.println(type + ":" + data);
+}
 void log(String data)
 {
   if (debug)

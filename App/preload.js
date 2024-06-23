@@ -1,7 +1,7 @@
 // All of the Node.js APIs are available in the preload process.
 // It has the same sandbox as a Chrome extension.
 const { contextBridge, ipcRenderer, ipcMain } = require("electron");
-const packJson = require('./package.json');
+const packJson = require("./package.json");
 
 contextBridge.exposeInMainWorld("env", {
   version: packJson.version,
@@ -15,6 +15,7 @@ contextBridge.exposeInMainWorld("bt", {
   connectSmartScale: () => ipcRenderer.invoke("connect-smart-scale"),
   startTest: () => ipcRenderer.invoke("start-test"),
   isPaired: () => ipcRenderer.invoke("is-paired"),
+  tare: () => ipcRenderer.invoke("tare"),
 });
 
 contextBridge.exposeInMainWorld("logger", {

@@ -300,14 +300,14 @@ class LoggerClass {
     this.init();
     // Listen for log messages from the main process
     logger.onLogMessage((message) => {
-      this.logs.push(message);
+      if (message && message.length > 0) {
+        this.logs.push(message);
+        this.render();
+      }
     });
 
     // Example usage: send a log message to the main process
-    logger.logMessage(
-      "info",
-      "This is a log message from the renderer process."
-    );
+    // logger.logMessage("This is a log message from the renderer process.");
   }
   onCreate() {
     const logsContainer = document.createElement("div");

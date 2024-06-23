@@ -1,10 +1,12 @@
 const { ipcMain, BrowserWindow, app, dialog } = require("electron");
 const { ConnectionHandler } = require("./connectionHandler.js");
+const { Logger } = require("./logger.js");
 
 class IpcHandler {
   constructor(mainWindow) {
     // setup local fileStorage
-    this.connectionHandler = new ConnectionHandler();
+    this.logger = new Logger(mainWindow);
+    this.connectionHandler = new ConnectionHandler(this.logger);
     this.initDone = this.init(mainWindow);
   }
   async init(mainWindow) {
@@ -22,7 +24,10 @@ class IpcHandler {
       return this.connectionHandler.startTest();
     });
     ipcMain.handle("is-paired", (event, route) => {
-      return this.connectionHandler.isPaired;
+      return {
+        isPaired: this.connectionHandler.isPaired,
+        smartScalePort: this.connectionHandler.smartScalePort,
+      };
     });
     ipcMain.handle("list-ports", (event, route) => {
       return {
@@ -33,15 +38,18 @@ class IpcHandler {
     ipcMain.handle("connect-smart-scale", (event, route) => {
       return this.connectionHandler.connectSmartScale();
     });
+    ipcMain.handle("tare", (event, route) => {
+      return this.connectionHandler.tare();
+    });
     ipcMain.handle("get-chart-data", (event, route) => {
       return this.connectionHandler.getData();
     });
     ipcMain.handle("get-local-path", async (event, route) => {
       const selectedPath = await dialog.showOpenDialog({
-        properties: ['openDirectory'],
+        properties: ["openDirectory"],
       });
       const filepath = selectedPath.filePaths[0];
-    //   console.log("selectedPath", filepath);
+      //   console.log("selectedPath", filepath);
       return filepath;
     });
   }

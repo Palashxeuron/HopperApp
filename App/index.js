@@ -20,20 +20,34 @@ const bottomBarItems = [
     onHover: "Paired to Smart-Scale",
     type: "button",
     onCreate: async () => {
-      bt.isPaired().then((isPaired, port) => {
-        if (isPaired) {
-          console.log("paired to Smart-Scale at port:", port);
+      bt.isPaired().then((response) => {
+        // console.log("response", response);
+        if (response.isPaired) {
+          console.log(
+            "You are paired to Smart-Scale at port:",
+            response.smartScalePort.path
+          );
           // make connect button green
           document.getElementById("paired").style.backgroundColor = "green";
+        } else {
+          document.getElementById("paired").style.backgroundColor = "red";
+          // disable connect button
         }
       });
     },
     onClick: async () => {
-      bt.isPaired().then((isPaired, port) => {
-        if (isPaired) {
-          console.log("paired to Smart-Scale at port:", port);
+      bt.isPaired().then((response) => {
+        // console.log("response", response);
+        if (response.isPaired) {
+          console.log(
+            "You are paired to Smart-Scale at port:",
+            response.smartScalePort.path
+          );
           // make connect button green
           document.getElementById("paired").style.backgroundColor = "green";
+        } else {
+          document.getElementById("paired").style.backgroundColor = "red";
+          // disable connect button
         }
       });
     },
@@ -47,20 +61,37 @@ const bottomBarItems = [
     onClick: async () => {
       if ("bluetooth" in navigator) {
         console.log("This device supports Bluetooth");
+
+        bt.connectSmartScale().then((response) => {
+          console.log("response", response);
+          if (response === "connected") {
+            console.log("connected to Smart-Scale");
+            // make connect button green
+            document.getElementById("connect").style.backgroundColor = "green";
+          } else {
+            document.getElementById("connect").style.backgroundColor = "red";
+          }
+        });
       } else {
         console.log("This device does not support Bluetooth");
+        document.getElementById("connect").style.backgroundColor = "red";
       }
-      bt.connectSmartScale().then((response) => {
-        console.log("response", response);
-        if (response === "connected") {
-          console.log("connected to Smart-Scale");
-          // make connect button green
-          document.getElementById("Connect").style.backgroundColor = "green";
-        }
-      });
     },
     onCreate: async () => {},
     position: 1,
+  },
+  {
+    id: "tare",
+    placeholder: "Tare",
+    onHover: "Tare",
+    type: "button",
+    onClick: async () => {
+      bt.tare().then((response) => {
+        console.log("response", response);
+      });
+    },
+    onCreate: async () => {},
+    position: 2,
   },
   {
     id: "start",
@@ -161,6 +192,5 @@ function getAboutContent() {
     <p>Version: ${env.version}</p> 
     <p>GitHub Repository: <a href="https://github.com/your-username/your-repo">https://github.com/your-username/your-repo</a></p>
   `;
-  console.log(env);
   return container;
 }

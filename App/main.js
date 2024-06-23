@@ -14,7 +14,7 @@ if (!isPackaged) {
   const electronReload = require("electron-reload");
   electronReload(__dirname, {
     // electron: path.join(__dirname, 'node_modules', '.bin', 'electron'),
-    ignored: /node_modules|[/\\]\.|relivedb\.sqlite3$/,
+    ignored: /node_modules|[/\\]\.|relivedb\.sqlite3$|app\.log/,
     awaitWriteFinish: true,
   });
 }

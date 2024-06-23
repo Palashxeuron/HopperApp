@@ -159,7 +159,7 @@ String endMarker_Esp = ":23pse";
 bool debug = true;
 bool connected = false;
 int weight = 0;
-bool sendWeights = false;
+bool STREAM_WEIGHT = false;
 
 void setup()
 {
@@ -255,9 +255,9 @@ void readLoadCell()
     // Read the data from the sensor
     const int sensorRead = scale.get_units(10);
     weight = sensorRead;
-    String str = "Weight: " + String(sensorRead) + " g";
+    String str = "WEIGHT: " + String(sensorRead) + " g";
     log(str);
-    if (connected && sendWeights)
+    if (connected && STREAM_WEIGHT)
     {
       sendToESP32(str);
     }
@@ -295,33 +295,43 @@ void handleEsp32Request(String data)
     // handshake
     if (request == "Are you Smart-Scale")
     {
-      log("Yes, I am Smart-Scale");
-      sendToESP32("Yes, I am Smart-Scale");
+      log("ACK: Yes, I am Smart-Scale");
+      sendToESP32("ACK: Yes, I am Smart-Scale");
       connected = true;
     }
     if (request == "connect")
     {
       connected = true;
+      sendToESP32("ACK: connect");
     }
     if (request == "disconnect")
     {
       connected = false;
+      sendToESP32("ACK: disconnect");
     }
     if (request == "getWeight")
     {
-      readLoadCell();
+      readLoadCell(); // will send one reading to esp32
     }
     if (request == "start sending weights")
     {
-      sendWeights = true;
+      STREAM_WEIGHT = true;
+      sendToESP32("ACK: start sending weights");
+    }
+    if (request == "stop sending weights")
+    {
+      STREAM_WEIGHT = false;
+      sendToESP32("ACK: stop sending weights");
     }
     if (request == "tare")
     {
       scale.tare();
+      sendToESP32("ACK: tarred");
     }
     if (request == "calibrate")
     {
       calibrateLoadCell();
+      sendToESP32("ACK: calibration started");
     }
   }
 }
