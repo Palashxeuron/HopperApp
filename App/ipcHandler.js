@@ -23,7 +23,8 @@ class IpcHandler {
     ipcMain.handle("start-test", (event, route) => {
       return this.connectionHandler.startTest();
     });
-    ipcMain.handle("is-paired", (event, route) => {
+    ipcMain.handle("is-paired", async (event, route) => {
+      await this.connectionHandler.findScalePort();
       return {
         isPaired: this.connectionHandler.isPaired,
         smartScalePort: this.connectionHandler.smartScalePort,
@@ -37,6 +38,9 @@ class IpcHandler {
     });
     ipcMain.handle("connect-smart-scale", (event, route) => {
       return this.connectionHandler.connectSmartScale();
+    });
+    ipcMain.handle("disconnect", (event, route) => {
+      return this.connectionHandler.disconnect();
     });
     ipcMain.handle("tare", (event, route) => {
       return this.connectionHandler.tare();

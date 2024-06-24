@@ -6,12 +6,17 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SH110X.h>
 #include <Arduino.h>
+#include <EEPROM.h>
+
+// Define EEPROM address to store the calibration factor
+const int calibrationFactorAddress = 0;
+
 
 // Initialize the HX711 sensor with data pin (D3) and clock pin (D2)
 // HX711 circuit wiring
 const int LOADCELL_DOUT_PIN = 3;
 const int LOADCELL_SCK_PIN = 2;
-bool LOADCELL_CALIBRATED = true;
+float LOADCELL_CALIBRATION_FACTOR; // This value is obtained by using the SparkFun_HX711_Calibration sketch
 #define LOADCELL_VIN 4
 
 HX711 scale;
@@ -208,27 +213,31 @@ void turnOnLoadCell(void)
 }
 void calibrateLoadCell(int knownWeight)
 {
-  if (scale.is_ready())
+  bool LOADCELL_CALIBRATED = false;
+  while (!LOADCELL_CALIBRATED)
   {
-    // scale.set_scale();
-    log("Using known weight: " + String(knownWeight) + " g");
-    sendToESP32("Using known weight: " + String(knownWeight) + " g");
+    if (scale.is_ready())
+    {
+      // scale.set_scale();
+      log("Using known weight: " + String(knownWeight) + " g");
+      // sendToESP32("Using known weight: " + String(knownWeight) + " g");
 
-    long reading = scale.get_units(10);
-    log("Result: " + String(reading) + " g");
-    sendToESP32("Result: " + String(reading) + " g");
+      long reading = scale.get_units(10);
+      log("Result: " + String(reading) + " g");
+      // sendToESP32("Result: " + String(reading) + " g");
 
-    float calibrationFactor = reading / knownWeight;
-    log("Calibration factor is: " + String(calibrationFactor));
-    sendToESP32("Calibration factor is: " + String(calibrationFactor));
+      float calibrationFactor = reading / knownWeight;
+      log("Calibration factor is: " + String(calibrationFactor));
+      // sendToESP32("Calibration factor is: " + String(calibrationFactor));
 
-    scale.set_scale(calibrationFactor); // Set the new calibration factor
-    sendToESP32("ACK: calibration done, calibration factor: " + String(calibrationFactor));
-    LOADCELL_CALIBRATED = true;
-  }
-  else
-  {
-    log("HX711 not found.");
+      scale.set_scale(calibrationFactor); // Set the new calibration factor
+      sendToESP32("ACK: calibration done, calibration factor: " + String(calibrationFactor));
+      LOADCELL_CALIBRATED = true;
+    }
+    else
+    {
+      log("HX711 not found." + scale.is_ready());
+    }
   }
   delay(1000);
 }
@@ -236,7 +245,7 @@ void calibrateLoadCell(int knownWeight)
 void readLoadCell()
 {
   // Read only when data is available!
-  if (scale.is_ready() && LOADCELL_CALIBRATED)
+  if (scale.is_ready())
   {
     // Read the data from the sensor
     const int sensorRead = scale.get_units(10);
@@ -272,12 +281,9 @@ void readSerial() // read from serial monitor
 
 void handleEsp32Request(String data)
 {
-  // log("esp32: " + data);
-
   if (isEspMessage(data)) // check if data contains the start and end marker
   {
     String request = extractEspMessage(data);
-    // log("esp32: " + request);
     // handshake
     if (request == "Are you Smart-Scale")
     {
@@ -428,12 +434,24 @@ void updateScreen()
   display.display();
 }
 
-int getCalibrationValue(String request){
-// extract value from string calibrate:100
+int getCalibrationValue(String request)
+{
+  // extract value from string calibrate:100
   int startIndex = request.indexOf(":") + 1;
   int endIndex = request.length();
   String value = request.substring(startIndex, endIndex);
   return value.toInt();
+}
+// Function to write calibration factor to EEPROM
+void writeCalibrationFactor(float calibrationFactor) {
+  EEPROM.put(calibrationFactorAddress, calibrationFactor);
+}
+
+// Function to read calibration factor from EEPROM
+float readCalibrationFactor() {
+  float calibrationFactor;
+  EEPROM.get(calibrationFactorAddress, calibrationFactor);
+  return calibrationFactor;
 }
 
 void log(String data)

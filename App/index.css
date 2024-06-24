@@ -10,13 +10,13 @@ body {
   display: flex;
   flex-direction: row;
 }
-#calibration-panel{
+#calibration-panel {
   display: flex;
   flex-direction: column;
   min-height: 20vh;
   justify-content: space-between;
 }
-#weight-input{
+#weight-input {
   width: 50%;
   margin-left: 1%;
   border-width: 2px;
@@ -112,7 +112,21 @@ body {
   font-size: 20px;
   cursor: pointer;
 }
-
+#logsPopup {
+  position: absolute;
+  top: 0vh;
+  left:71.5vw;
+  height: 92.5vh;
+  width: 30vw;
+  background-color: black;
+  color: white;
+  transform: translate(-50%,0%);
+  overflow: scroll;
+  border-radius: 10px;
+}
+#logsPopup .popup-content {
+  overflow: auto;
+}
 #settings-panel {
   display: flex;
   flex-direction: column;
@@ -139,4 +153,55 @@ table,
 th,
 td {
   border: 1px solid black;
+}
+
+
+/* scroll bar styling */
+
+/* Set the width of the scrollbar */
+:root {
+  --scrollbar-width: 10px;
+}
+
+/* Hide the scrollbar by default */
+.popup::-webkit-scrollbar {
+  width: 0.5vh;
+  height: 0px;
+  background-color: transparent;
+}
+
+/* Show the scrollbar when scrolling */
+.popup::-webkit-scrollbar-thumb {
+  background-color: transparent;
+  border-radius: var(--scrollbar-width);
+  transition: background-color 0.3s ease-in-out;
+  height: 50px;
+}
+
+/* Set the position of the scrollbar */
+.popup::-webkit-scrollbar-track {
+  /* margin: var(--scrollbar-width) 0; */
+  background-color: transparent;
+}
+
+/* Hover styles */
+.popup:hover::-webkit-scrollbar-thumb {
+  background-color: #6fc8a6;
+}
+
+.popup:hover::-webkit-scrollbar-thumb:active {
+  background-color: transparent;
+}
+
+.popup:hover::-webkit-scrollbar {
+  height: 0px;
+  background-color: transparent;
+}
+
+.popup:hover::-webkit-scrollbar-track {
+  background-color: transparent;
+}
+
+.popup:hover::-webkit-scrollbar-corner {
+  background-color: transparent;
 }

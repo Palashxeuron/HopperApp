@@ -13,6 +13,7 @@ contextBridge.exposeInMainWorld("bt", {
   getLocalPath: () => ipcRenderer.invoke("get-local-path"),
   getChartData: () => ipcRenderer.invoke("get-chart-data"),
   connectSmartScale: () => ipcRenderer.invoke("connect-smart-scale"),
+  disconnect: () => ipcRenderer.invoke("disconnect"),
   startTest: () => ipcRenderer.invoke("start-test"),
   isPaired: () => ipcRenderer.invoke("is-paired"),
   tare: () => ipcRenderer.invoke("tare"),

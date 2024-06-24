@@ -48,7 +48,6 @@ class ConnectionHandler {
           port.pnpId.includes("BTHENUM") &&
           port.pnpId.includes(this.exp32UID)
         ) {
-          console.log(port.pnpId);
           this.isPaired = true;
           this.smartScalePort = port;
           console.log("Smart-Scale is PAIRED");
@@ -106,10 +105,7 @@ class ConnectionHandler {
       if (this.isPaired && this.smartScalePort !== undefined) {
         console.log("connecting to Smart-Scale at", this.smartScalePort?.path);
         if (this.sp?.isOpen) {
-          this.sp.close((err) => {
-            console.log("port closed", err);
-          });
-          this.sp = undefined;
+          this.disconnect();
           console.log("Port already open so closed it first");
         }
         await this.openPort();
@@ -132,6 +128,12 @@ class ConnectionHandler {
   }
   async startTest() {
     this.sendCommand("start sending weight");
+  }
+  disconnect() {
+    this.sp.close((err) => {
+      console.log("port closed", err);
+    });
+    this.sp = undefined;
   }
   sendCommand(command, callback = () => {}) {
     try {
@@ -161,11 +163,12 @@ class ConnectionHandler {
     }
   }
   tare() {
+    console.log("taring");
     this.sendCommand("tare");
   }
-  calibrate(value) {
-    console.log("calibrating with value", value);
-    this.sendCommand(`calibrate:${value}`);
+  calibrate(knownWeight) {
+    console.log("calibrating with weight", knownWeight);
+    this.sendCommand(`calibrate:${knownWeight}`);
   }
   getData() {
     return { x: this.xData, y: this.yData };

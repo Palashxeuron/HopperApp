@@ -299,10 +299,16 @@ class LoggerClass {
     this.connectButton = document.querySelector(
       "button#connect.sidebar-button"
     );
+    this.disconnectButton = document.querySelector(
+      "button#disconnect.sidebar-button"
+    );
     // console.log("connectButton", this.connectButton);
     this.setupLogger();
   }
   setupLogger() {
+    if (this.listenerAdded) {
+      return;
+    }
     // Listen for log messages from the main process
     logger.onLogMessage((message) => {
       if (message && message.length > 0) {
@@ -311,6 +317,7 @@ class LoggerClass {
         this.render();
       }
     });
+    this.listenerAdded = true;
   }
   handleLogMessage() {
     const message = this.logs[this.logs.length - 1];
@@ -319,11 +326,23 @@ class LoggerClass {
       // do something
       console.log("connected");
       this.connectButton.style.backgroundColor = "green";
+      this.disconnectButton.style.backgroundColor = "red";
     }
     if (message.includes("Port closed")) {
       // do something
       console.log("dis-connected");
       this.connectButton.style.backgroundColor = "red";
+      this.disconnectButton.style.backgroundColor = "green";
+    }
+    if (message.includes("ACK: calibration done")) {
+      // get calibration factor from "ACK: calibration done, calibration factor: " + String(calibrationFactor)
+      const calibrationFactor = message.split(
+        "ACK: calibration done, calibration factor: "
+      )[1];
+      console.log("calibration factor", calibrationFactor);
+    }
+    if (message.includes("ACK: tarred")) {
+      console.log("tare done");
     }
   }
   onCreate() {

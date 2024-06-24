@@ -25,9 +25,9 @@ const bottomBarItems = [
       bt.isPaired().then((response) => {
         // console.log("response", response);
         if (response.isPaired) {
-          console.log(
-            "You are paired to Smart-Scale at port:",
-            response.smartScalePort.path
+          logger.logMessage(
+            `Paired to Smart-Scale at port: 
+            ${response.smartScalePort.path}`
           );
           // make connect button green
           document.getElementById("paired").style.backgroundColor = "green";
@@ -41,15 +41,14 @@ const bottomBarItems = [
       bt.isPaired().then((response) => {
         // console.log("response", response);
         if (response.isPaired) {
-          console.log(
-            "You are paired to Smart-Scale at port:",
-            response.smartScalePort.path
+          logger.logMessage(
+            `Paired to Smart-Scale at port: 
+            ${response.smartScalePort.path}`
           );
-          // make connect button green
+          // make paired button green
           document.getElementById("paired").style.backgroundColor = "green";
         } else {
           document.getElementById("paired").style.backgroundColor = "red";
-          // disable connect button
         }
       });
     },
@@ -68,6 +67,17 @@ const bottomBarItems = [
         console.log("This device does not support Bluetooth");
         document.getElementById("connect").style.backgroundColor = "red";
       }
+    },
+    onCreate: async () => {},
+    position: 1,
+  },
+  {
+    id: "disconnect",
+    placeholder: "Disconnect",
+    onHover: "Disconnect Smart-Scale",
+    type: "button",
+    onClick: async () => {
+      bt.disconnect();
     },
     onCreate: async () => {},
     position: 1,
@@ -162,9 +172,7 @@ const rightBarItems = [
     onHover: "Start test",
     type: "button",
     onClick: async () => {
-      bt.startTest().then((response) => {
-        console.log("response", response);
-      });
+      // bt.startTest();
     },
     onCreate: async () => {},
     position: 2,
