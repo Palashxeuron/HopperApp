@@ -8,14 +8,18 @@
 #include <Arduino.h>
 #include <EEPROM.h>
 
+// Declare functions prototypes
+float readCalibrationFactor();
+// initialize start time
+// int startTime = millis();
 // Define EEPROM address to store the calibration factor
-const int calibrationFactorAddress = 0;
-
+const int CALIBRATION_FACTOR_ADDR = 0;
 
 // Initialize the HX711 sensor with data pin (D3) and clock pin (D2)
 // HX711 circuit wiring
 const int LOADCELL_DOUT_PIN = 3;
 const int LOADCELL_SCK_PIN = 2;
+// float LOADCELL_CALIBRATION_FACTOR = readCalibrationFactor(); // This value is obtained by using the SparkFun_HX711_Calibration sketch
 float LOADCELL_CALIBRATION_FACTOR; // This value is obtained by using the SparkFun_HX711_Calibration sketch
 #define LOADCELL_VIN 4
 
@@ -210,6 +214,22 @@ void turnOnLoadCell(void)
   scale.begin(LOADCELL_DOUT_PIN, LOADCELL_SCK_PIN);
   // you need to wait for the sensor to be ready and wait for the OLED to power up
   delay(500);
+  if (scale.is_ready())
+  {
+    if (isValidFloat(LOADCELL_CALIBRATION_FACTOR))
+    {
+      scale.set_scale(LOADCELL_CALIBRATION_FACTOR);
+      log("calibration done, calibration factor: " + String(LOADCELL_CALIBRATION_FACTOR));
+    }
+    else
+    {
+      log("calibration factor not set");
+    }
+  }
+  else
+  {
+    log("HX711 not found." + scale.is_ready());
+  }
 }
 void calibrateLoadCell(int knownWeight)
 {
@@ -230,8 +250,7 @@ void calibrateLoadCell(int knownWeight)
       log("Calibration factor is: " + String(calibrationFactor));
       // sendToESP32("Calibration factor is: " + String(calibrationFactor));
 
-      scale.set_scale(calibrationFactor); // Set the new calibration factor
-      sendToESP32("ACK: calibration done, calibration factor: " + String(calibrationFactor));
+      setScaleCalibrationFactor(calibrationFactor); // Set the new calibration factor
       LOADCELL_CALIBRATED = true;
     }
     else
@@ -250,7 +269,7 @@ void readLoadCell()
     // Read the data from the sensor
     const int sensorRead = scale.get_units(10);
     weight = sensorRead;
-    String str = "WEIGHT: " + String(sensorRead) + " g";
+    String str = "WEIGHT: " + String(sensorRead) + " g" + ";TIME: " + String(millis()) + " ms";
     log(str);
     if (connected && STREAM_WEIGHT)
     {
@@ -322,7 +341,7 @@ void handleEsp32Request(String data)
     }
     if (request.indexOf("calibrate") >= 0)
     {
-      int weight = getCalibrationValue(request);
+      int weight = getCalibrationWeight(request);
       calibrateLoadCell(weight);
       sendToESP32("ACK: calibration started");
     }
@@ -434,7 +453,7 @@ void updateScreen()
   display.display();
 }
 
-int getCalibrationValue(String request)
+int getCalibrationWeight(String request)
 {
   // extract value from string calibrate:100
   int startIndex = request.indexOf(":") + 1;
@@ -442,16 +461,33 @@ int getCalibrationValue(String request)
   String value = request.substring(startIndex, endIndex);
   return value.toInt();
 }
-// Function to write calibration factor to EEPROM
-void writeCalibrationFactor(float calibrationFactor) {
-  EEPROM.put(calibrationFactorAddress, calibrationFactor);
+void writeCalibrationFactor(float calibrationFactor)
+{
+  // write calibration factor to EEPROM
+  EEPROM.put(CALIBRATION_FACTOR_ADDR, calibrationFactor);
+  log("Calibration factor written to EEPROM: " + String(EEPROM.get(CALIBRATION_FACTOR_ADDR, calibrationFactor)));
+}
+float readCalibrationFactor()
+{
+  // read calibration factor from EEPROM
+  float calibrationFactor;
+  EEPROM.get(CALIBRATION_FACTOR_ADDR, calibrationFactor);
+  log("Calibration factor: " + String(calibrationFactor));
+  return calibrationFactor;
+}
+void setScaleCalibrationFactor(float calibrationFactor)
+{
+  scale.set_scale(calibrationFactor);
+  LOADCELL_CALIBRATION_FACTOR = calibrationFactor;
+  writeCalibrationFactor(calibrationFactor);
+  sendToESP32("ACK: calibration done, calibration factor: " + String(calibrationFactor));
 }
 
-// Function to read calibration factor from EEPROM
-float readCalibrationFactor() {
-  float calibrationFactor;
-  EEPROM.get(calibrationFactorAddress, calibrationFactor);
-  return calibrationFactor;
+bool isValidFloat(float value)
+{
+  // Example check: Ensure the value is within a specific range
+  // This is just an example and the actual validation logic will depend on your application's requirements
+  return value > 0.0 && value < 10000.0;
 }
 
 void log(String data)

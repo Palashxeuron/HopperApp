@@ -1,10 +1,11 @@
 class HomePage {
-  constructor(rightBarItems, bottomBarItems, logger) {
+  constructor(rightBarItems, bottomBarItems, logger, calibrationPopup) {
     this.rightBarItems = rightBarItems;
     this.bottomBarItems = bottomBarItems;
     this.bottomBar = new BottomBar(this);
     this.rightBar = new RightBar(this);
     this.logger = logger;
+    this.calibrationPanel = calibrationPopup;
     this.create();
   }
   create() {
@@ -322,6 +323,14 @@ class LoggerClass {
   handleLogMessage() {
     const message = this.logs[this.logs.length - 1];
     // console.log("message", message);
+    if (message.includes("WEIGHT:")) {
+      // extract weight and time from message sent as
+      // String str = "WEIGHT: " + String(sensorRead) + " g" + ";TIME: " + String(millis()) + " ms";
+      const weight = message.split("WEIGHT: ")[1].split(" g")[0];
+      const time = message.split("TIME: ")[1].split(" ms")[0];
+      console.log("weight", weight);
+      console.log("time", time);
+    }
     if (message.includes("ACK: connect")) {
       // do something
       console.log("connected");

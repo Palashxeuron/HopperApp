@@ -173,6 +173,14 @@ class ConnectionHandler {
   getData() {
     return { x: this.xData, y: this.yData };
   }
+  startReceivingData() {
+    console.log("asking to start sending weights");
+    this.sendCommand("start sending weights");
+  }
+  stopReceivingData() {
+    console.log("asking to stop sending weights");
+    this.sendCommand("stop sending weights");
+  }
 }
 
 module.exports = { ConnectionHandler };

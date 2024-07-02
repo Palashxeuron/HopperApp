@@ -172,7 +172,18 @@ const rightBarItems = [
     onHover: "Start test",
     type: "button",
     onClick: async () => {
-      // bt.startTest();
+      bt.startCollectingWeight();
+    },
+    onCreate: async () => {},
+    position: 2,
+  },
+  {
+    id: "stop",
+    placeholder: "Stop",
+    onHover: "Stop test",
+    type: "button",
+    onClick: async () => {
+      bt.stopCollectingWeight();
     },
     onCreate: async () => {},
     position: 2,
@@ -199,7 +210,12 @@ const rightBarItems = [
 ];
 
 const chart = new ChartClass();
-const homePage = new HomePage(rightBarItems, bottomBarItems, loggerClass);
+const homePage = new HomePage(
+  rightBarItems,
+  bottomBarItems,
+  loggerClass,
+  calibrationPopup
+);
 
 function getAboutContent() {
   const container = document.createElement("div");

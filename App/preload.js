@@ -18,6 +18,8 @@ contextBridge.exposeInMainWorld("bt", {
   isPaired: () => ipcRenderer.invoke("is-paired"),
   tare: () => ipcRenderer.invoke("tare"),
   calibrate: (value) => ipcRenderer.invoke("calibrate", value),
+  startCollectingWeight: () => ipcRenderer.invoke("start-collecting-weight"),
+  stopCollectingWeight: () => ipcRenderer.invoke("stop-collecting-weight"),
 });
 
 contextBridge.exposeInMainWorld("logger", {

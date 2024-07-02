@@ -45,6 +45,12 @@ class IpcHandler {
     ipcMain.handle("tare", (event, route) => {
       return this.connectionHandler.tare();
     });
+    ipcMain.handle("start-collecting-weight", (event, route) => {
+      return this.connectionHandler.startReceivingData();
+    });
+    ipcMain.handle("stop-collecting-weight", (event, route) => {
+      return this.connectionHandler.stopReceivingData();
+    });
     ipcMain.handle("calibrate", (event, value) => {
       return this.connectionHandler.calibrate(value);
     });
