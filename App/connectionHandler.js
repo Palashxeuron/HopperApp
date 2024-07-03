@@ -80,6 +80,8 @@ class ConnectionHandler {
         // check if port belongs to Smart-Scale
         this.logger.log(data.toString());
       });
+      console.log("added data listener");
+
       this.sp.on("close", () => {
         console.log("Port closed");
         this.logger.log("Port closed");
@@ -140,7 +142,7 @@ class ConnectionHandler {
     });
     this.sp = undefined;
   }
-  sendCommand(command, callback = () => {}) {
+  sendCommand(command, callback = null) {
     try {
       if (this.sp === undefined) {
         console.error("smart scale port not defined");
@@ -159,10 +161,13 @@ class ConnectionHandler {
           );
         }
       });
-      this.sp.once("data", (data) => {
-        // console.log("data", data.toString());
-        callback(data.toString());
-      });
+      // if callback is not null, add listen for data once
+      if (callback !== null) {
+        this.sp.once("data", (data) => {
+          // console.log("data", data.toString());
+          callback(data.toString());
+        });
+      }
     } catch (err) {
       console.error("Error sending command:", err);
     }

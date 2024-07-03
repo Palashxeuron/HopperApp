@@ -7,6 +7,7 @@ class App {
     this.chart = new ChartClass(this);
     this.stillConnected = false;
     this.connectionCheckLoop = null;
+    this.latestMessageTimeStamp = null;
     this.bottomBarItems = [
       {
         id: "paired",
@@ -264,7 +265,11 @@ class App {
     console.log("starting connection check loop");
     this.connectionCheckLoop = setInterval(() => {
       console.log("checking connection");
-      bt.stillConnected();
+      if (Date.now() - this.latestMessageTimeStamp > 30000) {
+        // only send the still Connected message to scale if
+        // we have not received any message for 30 seconds
+        bt.stillConnected();
+      }
       this.connectionCheck.bind(this);
     }, 5000);
   }
@@ -631,6 +636,7 @@ class LoggerClass {
     this.listenerAdded = true;
   }
   handleLogMessage() {
+    this.parent.latestMessageTimeStamp = Date.now();
     const message = this.logs[this.logs.length - 1];
     // console.log("message", message);
     if (message.includes("WEIGHT:")) {
