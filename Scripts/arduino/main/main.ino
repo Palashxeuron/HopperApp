@@ -315,6 +315,11 @@ void handleEsp32Request(String data)
       connected = true;
       sendToESP32("ACK: connect");
     }
+    if (request == "still connected")
+    {
+      connected = true;
+      sendToESP32("ACK: still connected");
+    }
     if (request == "disconnect")
     {
       connected = false;

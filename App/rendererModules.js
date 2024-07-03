@@ -1,22 +1,281 @@
-class HomePage {
-  constructor(rightBarItems, bottomBarItems, logger, calibrationPopup) {
-    this.rightBarItems = rightBarItems;
-    this.bottomBarItems = bottomBarItems;
+class App {
+  constructor() {
+    this.logger = new LoggerClass(this);
+    this.settings = new SettingsPanel(this);
+    this.creepTestPanel = new CreepTestPanel(this);
+    this.calibrationPopup = new CalibrationPopup(this);
+    this.chart = new ChartClass(this);
+    this.stillConnected = false;
+    this.connectionCheckLoop = null;
+    this.bottomBarItems = [
+      {
+        id: "paired",
+        placeholder: "Paired",
+        onHover: "Paired to Smart-Scale",
+        type: "button",
+        onCreate: async () => {
+          bt.isPaired().then((response) => {
+            // console.log("response", response);
+            if (response.isPaired) {
+              logger.logMessage(
+                `Paired to Smart-Scale at port: 
+                ${response.smartScalePort.path}`
+              );
+              // make connect button green
+              document.getElementById("paired").style.backgroundColor = "green";
+            } else {
+              document.getElementById("paired").style.backgroundColor = "red";
+              // disable connect button
+            }
+          });
+        },
+        onClick: async () => {
+          bt.isPaired().then((response) => {
+            // console.log("response", response);
+            if (response.isPaired) {
+              logger.logMessage(
+                `Paired to Smart-Scale at port: 
+                ${response.smartScalePort.path}`
+              );
+              // make paired button green
+              document.getElementById("paired").style.backgroundColor = "green";
+            } else {
+              document.getElementById("paired").style.backgroundColor = "red";
+            }
+          });
+        },
+        position: 1,
+      },
+      {
+        id: "connect",
+        placeholder: "Connect",
+        onHover: "Connect to Smart-Scale",
+        type: "button",
+        onClick: async () => {
+          if ("bluetooth" in navigator) {
+            console.log("This device supports Bluetooth");
+            bt.connectSmartScale();
+          } else {
+            console.log("This device does not support Bluetooth");
+            document.getElementById("connect").style.backgroundColor = "red";
+          }
+        },
+        onCreate: async () => {},
+        position: 1,
+      },
+      {
+        id: "disconnect",
+        placeholder: "Disconnect",
+        onHover: "Disconnect Smart-Scale",
+        type: "button",
+        onClick: async () => {
+          bt.disconnect();
+        },
+        onCreate: async () => {},
+        position: 1,
+      },
+    ];
+    this.rightBarItems = [
+      {
+        id: "logs",
+        placeholder: "Logs",
+        onHover: "Open Logs",
+        type: "popup",
+        popup: {
+          id: "logsPopup",
+          title: "Logs",
+          onClose: () => {},
+          onOpen: async () => {
+            await this.logger.render();
+          },
+          onCreate: async () => {
+            this.logger.onCreate();
+          },
+        },
+        position: 1,
+      },
+      {
+        id: "settings",
+        placeholder: "Settings",
+        onHover: "Open Settings",
+        type: "popup",
+        popup: {
+          id: "settingsPopup",
+          title: "Settings",
+          onClose: () => {},
+          onOpen: async () => {},
+          onCreate: async () => {
+            await this.settings.create();
+          },
+        },
+        position: 2,
+      },
+      {
+        id: "coms",
+        placeholder: "COM ports",
+        onHover: "Show COM ports",
+        type: "popup",
+        popup: {
+          id: "comsPopup",
+          title: "COM ports",
+          onOpen: () => {},
+          onClose: () => {},
+          onCreate: async () => {
+            const comPortTable = new ComPortTable();
+            const container = await comPortTable.create();
+            document
+              .querySelector("#comsPopup .popup-content")
+              .appendChild(container);
+            // return container.outerHTML;
+          },
+        },
+        position: 3,
+      },
+      {
+        id: "tare",
+        placeholder: "Tare",
+        onHover: "Tare",
+        type: "button",
+        onClick: async () => {
+          bt.tare();
+        },
+        onCreate: async () => {},
+        position: 2,
+      },
+      {
+        id: "calibrate",
+        placeholder: "Calibrate",
+        onHover: "Calibrate",
+        type: "popup",
+        popup: {
+          id: "calibrationPopup",
+          title: "Calibrate Scale",
+          onOpen: () => {},
+          onClose: () => {},
+          onCreate: async () => {
+            this.calibrationPopup.create();
+          },
+        },
+        position: 2,
+      },
+      {
+        id: "start",
+        placeholder: "Start",
+        onHover: "Start test",
+        type: "button",
+        onClick: async () => {
+          bt.startCollectingWeight();
+        },
+        onCreate: async () => {},
+        position: 2,
+      },
+      {
+        id: "stop",
+        placeholder: "Stop",
+        onHover: "Stop test",
+        type: "button",
+        onClick: async () => {
+          bt.stopCollectingWeight();
+        },
+        onCreate: async () => {},
+        position: 2,
+      },
+      {
+        id: "creepTest",
+        placeholder: "Creep Test",
+        onHover: "Creep test",
+        type: "popup",
+        popup: {
+          id: "creepTestPopup",
+          title: "Creep Test",
+          onClose: () => {},
+          onOpen: async () => {},
+          onCreate: async () => {
+            await this.creepTestPanel.create();
+          },
+        },
+        position: 2,
+      },
+      {
+        id: "hysteresisTest",
+        placeholder: "Hysteresis Test",
+        onHover: "Hysteresis test",
+        type: "button",
+        onClick: async () => {
+          bt.startCreepTest();
+        },
+        onCreate: async () => {},
+        position: 2,
+      },
+      {
+        id: "about",
+        placeholder: "About",
+        onHover: "Open About",
+        type: "popup",
+        popup: {
+          id: "aboutPopup",
+          title: "About",
+          onClose: () => {},
+          onOpen: async () => {},
+          onCreate: async () => {
+            const container = this.getAboutContent();
+            document
+              .querySelector("#aboutPopup .popup-content")
+              .appendChild(container);
+          },
+        },
+        position: 10,
+      },
+    ];
     this.bottomBar = new BottomBar(this);
     this.rightBar = new RightBar(this);
-    this.logger = logger;
-    this.calibrationPanel = calibrationPopup;
     this.create();
+    this.connectButton = document.querySelector(
+      "button#connect.sidebar-button"
+    );
+    this.disconnectButton = document.querySelector(
+      "button#disconnect.sidebar-button"
+    );
   }
   create() {
     this.bottomBar.create();
     this.rightBar.create();
     this.logger.init();
   }
+  getAboutContent() {
+    const container = document.createElement("div");
+    container.id = "about-container";
+    container.innerHTML = `
+      <h1>About</h1>
+      <p>This is a Smart-Scale application</p>
+      <p>Version: ${env.version}</p> 
+      <p>GitHub Repository: <a href="https://github.com/your-username/your-repo">https://github.com/your-username/your-repo</a></p>
+    `;
+    return container;
+  }
+  connectionCheck() {
+    if (this.stillConnected && Date.now() - this.lastStillConnected > 30000) {
+      this.stillConnected = false;
+      logger.logMessage("Port closed");
+    }
+  }
+  startConnectionCheckLoop() {
+    if (this.connectionCheckLoop) clearInterval(this.connectionCheckLoop);
+    console.log("starting connection check loop");
+    this.connectionCheckLoop = setInterval(() => {
+      console.log("checking connection");
+      bt.stillConnected();
+      this.connectionCheck.bind(this);
+    }, 5000);
+  }
+  stopConnectionCheckLoop() {
+    console.log("stopping connection check loop");
+    if (this.connectionCheckLoop) clearInterval(this.connectionCheckLoop);
+  }
 }
 class BottomBar {
-  constructor(homePage) {
-    this.parent = homePage;
+  constructor(parent) {
+    this.parent = parent;
     this.items = this.parent.bottomBarItems;
   }
   create() {
@@ -29,8 +288,8 @@ class BottomBar {
   }
 }
 class RightBar {
-  constructor(homePage) {
-    this.parent = homePage;
+  constructor(parent) {
+    this.parent = parent;
     this.items = this.parent.rightBarItems;
   }
   create() {
@@ -42,9 +301,9 @@ class RightBar {
   }
 }
 class BarItem {
-  constructor(item, homePage) {
+  constructor(item, parent) {
     this.item = item;
-    this.parent = homePage;
+    this.parent = parent;
     this.popup = null;
   }
   create() {
@@ -66,8 +325,8 @@ class BarItem {
   }
 }
 class Popup {
-  constructor(popupJson, homePage) {
-    this.parent = homePage;
+  constructor(popupJson, parent) {
+    this.parent = parent;
     this.popupItem = popupJson;
     this.popup = null;
     this.create();
@@ -140,7 +399,8 @@ class ComPortTable {
   }
 }
 class SettingsPanel {
-  constructor() {
+  constructor(parent) {
+    this.parent = parent;
     this.popupId = "settings";
     this.ports = []; //bt.listPorts();
     this.portsPath = []; //this.ports.map((port) => port.path);
@@ -236,8 +496,64 @@ class SettingsPanel {
     document.getElementById(id).style.display = "none";
   }
 }
+class CreepTestPanel {
+  constructor(parent) {
+    this.parent = parent;
+    this.popupId = "creepTest";
+    this.duration = 100;
+    this.load = 0;
+    this.init();
+    this.initDone = this.init();
+  }
+  isReady() {
+    return this.initDone;
+  }
+  async init() {}
+  // create settings panel that let user select port from a dropdown and select save path opening a file dialog
+  async create() {
+    // make sure init is done with isReady
+    await this.isReady();
+    const creepTestPanel = document.createElement("div");
+    creepTestPanel.id = "creepTest-panel";
+
+    // Create save path input
+    const loadLabel = document.createElement("label");
+    loadLabel.innerHTML = "Load in gms :";
+    const loadInput = document.createElement("input");
+    loadInput.type = "text";
+    loadInput.id = "save-path-input";
+
+    loadLabel.appendChild(loadInput);
+    // Create save path input
+    const durationLabel = document.createElement("label");
+    durationLabel.innerHTML = "Duration (min) :";
+    const durationInput = document.createElement("input");
+    durationInput.type = "text";
+    durationInput.id = "save-path-input";
+
+    durationLabel.appendChild(durationInput);
+    // Create save settings button
+    const startTestButton = document.createElement("button");
+    startTestButton.innerHTML = "Start creep test";
+    startTestButton.id = "start-creep-test-button";
+
+    // Append all elements to the settings panel
+    creepTestPanel.appendChild(loadLabel);
+    creepTestPanel.appendChild(durationLabel);
+    creepTestPanel.appendChild(startTestButton);
+    document
+      .querySelector("#creepTestPopup .popup-content")
+      .appendChild(creepTestPanel);
+    this.afterCreate();
+  }
+  afterCreate() {}
+  closePopup(id = this.popupId) {
+    document.getElementById(id).style.display = "none";
+  }
+}
 class ChartClass {
-  constructor() {
+  constructor(parent) {
+    this.parent = parent;
     this.div = document.getElementById("chart");
     this.canvas = document.getElementById("myChart");
     this.chartUpdateInterval = 5000;
@@ -290,20 +606,14 @@ class ChartClass {
   }
 }
 class LoggerClass {
-  constructor() {
+  constructor(parent) {
     this.logs = ["logger initialized"];
+    this.parent = parent;
     this.init();
   }
   init() {
     this.popupContent = document.querySelector("#logsPopup .popup-content");
     this.logsContainer = document.getElementById("logsContainer");
-    this.connectButton = document.querySelector(
-      "button#connect.sidebar-button"
-    );
-    this.disconnectButton = document.querySelector(
-      "button#disconnect.sidebar-button"
-    );
-    // console.log("connectButton", this.connectButton);
     this.setupLogger();
   }
   setupLogger() {
@@ -334,14 +644,25 @@ class LoggerClass {
     if (message.includes("ACK: connect")) {
       // do something
       console.log("connected");
-      this.connectButton.style.backgroundColor = "green";
-      this.disconnectButton.style.backgroundColor = "red";
+      this.parent.lastStillConnected = Date.now();
+      this.parent.stillConnected = true;
+      this.parent.startConnectionCheckLoop();
+      this.parent.connectButton.style.backgroundColor = "green";
+      this.parent.disconnectButton.style.backgroundColor = "red";
+    }
+    if (message.includes("ACK: still connected")) {
+      // do something
+      console.log("still connected");
+      this.parent.stillConnected = true;
+      this.parent.lastStillConnected = Date.now();
     }
     if (message.includes("Port closed")) {
       // do something
       console.log("dis-connected");
-      this.connectButton.style.backgroundColor = "red";
-      this.disconnectButton.style.backgroundColor = "green";
+      this.parent.stillConnected = false;
+      this.parent.stopConnectionCheckLoop();
+      this.parent.connectButton.style.backgroundColor = "red";
+      this.parent.disconnectButton.style.backgroundColor = "green";
     }
     if (message.includes("ACK: calibration done")) {
       // get calibration factor from "ACK: calibration done, calibration factor: " + String(calibrationFactor)
@@ -378,7 +699,8 @@ class LoggerClass {
   }
 }
 class CalibrationPopup {
-  constructor() {
+  constructor(parent) {
+    this.parent = parent;
     this.popupId = "calibrationPopup";
     this.init();
     this.initDone = this.init();
@@ -475,15 +797,5 @@ class CalibrationPopup {
     document.getElementById(id).style.display = "none";
   }
 }
-export {
-  HomePage,
-  BottomBar,
-  RightBar,
-  BarItem,
-  Popup,
-  ComPortTable,
-  SettingsPanel,
-  ChartClass,
-  LoggerClass,
-  CalibrationPopup,
-};
+
+export { App };

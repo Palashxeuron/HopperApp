@@ -115,12 +115,12 @@ body {
 #logsPopup {
   position: absolute;
   top: 0vh;
-  left:71.5vw;
+  left: 71.5vw;
   height: 92.5vh;
   width: 30vw;
   background-color: black;
   color: white;
-  transform: translate(-50%,0%);
+  transform: translate(-50%, 0%);
   overflow: scroll;
   border-radius: 10px;
 }
@@ -128,6 +128,13 @@ body {
   overflow: auto;
 }
 #settings-panel {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 20vh;
+  width: 30vw;
+}
+#creepTest-panel {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -144,7 +151,17 @@ body {
 #settings-panel #save-settings-button {
   align-self: flex-end;
 }
+#comPorts_container {
+  width: 50vw;
+  height: 50vh;
+  overflow: auto; /* Add this line to handle overflow */
+}
 
+#comPorts_container table {
+  width: 100%; /* Make the table width equal to the container width */
+  height: 100%; /* Make the table height equal to the container height */
+  display: block; /* Change display to block to allow height control */
+}
 table {
   border-collapse: collapse;
 }
@@ -154,7 +171,6 @@ th,
 td {
   border: 1px solid black;
 }
-
 
 /* scroll bar styling */
 

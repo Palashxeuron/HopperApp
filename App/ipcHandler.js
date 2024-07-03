@@ -39,6 +39,9 @@ class IpcHandler {
     ipcMain.handle("connect-smart-scale", (event, route) => {
       return this.connectionHandler.connectSmartScale();
     });
+    ipcMain.handle("still-connected", (event, route) => {
+      return this.connectionHandler.sendCommand("still connected");
+    });
     ipcMain.handle("disconnect", (event, route) => {
       return this.connectionHandler.disconnect();
     });

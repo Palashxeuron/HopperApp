@@ -14,6 +14,7 @@ class ConnectionHandler {
     this.sp = undefined;
     this.isPaired = false;
     this.exp32UID = "&4022D8EADB3E";
+    this.beforeQuitListenerAdded = false;
   }
   async init() {
     await this.listSerialPorts();
@@ -92,9 +93,13 @@ class ConnectionHandler {
         );
         return false;
       });
-      app.on("before-quit", () => {
-        this.sendCommand("disconnect");
-      });
+      if (!this.beforeQuitListenerAdded) {
+        // Step 2: Check the flag
+        app.on("before-quit", () => {
+          this.sendCommand("disconnect");
+        });
+        this.beforeQuitListenerAdded = true; // Set the flag to true after adding the listener
+      }
     } catch (err) {
       console.error("error opening port", err);
     }

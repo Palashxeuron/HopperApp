@@ -20,6 +20,7 @@ contextBridge.exposeInMainWorld("bt", {
   calibrate: (value) => ipcRenderer.invoke("calibrate", value),
   startCollectingWeight: () => ipcRenderer.invoke("start-collecting-weight"),
   stopCollectingWeight: () => ipcRenderer.invoke("stop-collecting-weight"),
+  stillConnected: () => ipcRenderer.invoke("still-connected"),
 });
 
 contextBridge.exposeInMainWorld("logger", {
