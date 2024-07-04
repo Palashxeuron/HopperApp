@@ -680,6 +680,20 @@ class LoggerClass {
     if (message.includes("ACK: tarred")) {
       console.log("tare done");
     }
+    if (message.includes("ACK: calibrated using:")) {
+      const regex = /calibrated using: (\d+(\.\d+)?);Result: (\d+(\.\d+)?) g/;
+      const match = inputString.match(regex);
+      if (match) {
+        const calibrationFactor = parseFloat(match[1]);
+        const reading = parseFloat(match[3]);
+        document.getElementById("weight-calibration-reading").textContent = reading;
+        console.log(
+          `Calibration Factor: ${calibrationFactor}, Reading: ${reading}`
+        );
+      } else {
+        console.log("No match found");
+      }
+    }
   }
   onCreate() {
     const logsContainer = document.createElement("div");
@@ -728,27 +742,21 @@ class CalibrationPopup {
 
     // Create instruction label
     const instructionLabel1 = document.createElement("label");
-    instructionLabel1.innerHTML =
-      "Put some known weight on the scale and enter it below in grams.";
+    instructionLabel1.innerHTML = "Enter the desired calibration factor";
 
     // Create input wrapper
-    const weightInputWrapper = document.createElement("div");
-    weightInputWrapper.style.display = "flex";
-    weightInputWrapper.style.alignItems = "center";
+    const calFactorInputWrapper = document.createElement("div");
+    calFactorInputWrapper.style.display = "flex";
+    calFactorInputWrapper.style.alignItems = "center";
 
     // Create input for weight
-    const weightInput = document.createElement("input");
-    weightInput.type = "number";
-    weightInput.id = "weight-input";
-    weightInput.style.marginRight = "5px"; // Space between input and text
-
-    // Create text for units
-    const unitText = document.createElement("span");
-    unitText.innerHTML = "gms";
+    const calFactorInput = document.createElement("input");
+    calFactorInput.type = "number";
+    calFactorInput.id = "calFactor-input";
+    calFactorInput.style.marginRight = "5px"; // Space between input and text
 
     // Append input and unit text to wrapper
-    weightInputWrapper.appendChild(weightInput);
-    weightInputWrapper.appendChild(unitText);
+    calFactorInputWrapper.appendChild(calFactorInput);
 
     // Create warning message
     const warningMessage = document.createElement("p");
@@ -758,8 +766,8 @@ class CalibrationPopup {
     warningMessage.innerHTML = "Please enter a valid number.";
 
     // Add event listener to weight input to show warning if input is invalid
-    weightInput.addEventListener("input", () => {
-      if (isNaN(weightInput.value) || weightInput.value.trim() === "") {
+    calFactorInput.addEventListener("input", () => {
+      if (isNaN(calFactorInput.value) || calFactorInput.value.trim() === "") {
         warningMessage.style.display = "block";
       } else {
         warningMessage.style.display = "none";
@@ -768,7 +776,8 @@ class CalibrationPopup {
 
     // Create second instruction label
     const instructionLabel2 = document.createElement("label");
-    instructionLabel2.innerHTML = "Press Calibrate to calibrate scale now.";
+    instructionLabel2.id = "weight-calibration-reading";
+    instructionLabel2.innerHTML = "";
 
     // Create calibrate button
     const calibrateButton = document.createElement("button");
@@ -779,7 +788,7 @@ class CalibrationPopup {
     // calibrationPanel.appendChild(title);
     calibrationPanel.appendChild(instructionLabel1);
     calibrationPanel.appendChild(warningMessage);
-    calibrationPanel.appendChild(weightInputWrapper);
+    calibrationPanel.appendChild(calFactorInputWrapper);
     calibrationPanel.appendChild(instructionLabel2);
     calibrationPanel.appendChild(calibrateButton);
     document
@@ -791,13 +800,13 @@ class CalibrationPopup {
   afterCreate() {
     this.calibrateButton = document.querySelector("#calibrate-button");
     this.calibrateButton.onclick = async () => {
-      const weight = this.readWeight();
-      bt.calibrate(weight);
+      const factor = this.readFactor();
+      bt.calibrate(factor);
     };
   }
-  readWeight() {
-    const weightInput = document.getElementById("weight-input");
-    return weightInput.value;
+  readFactor() {
+    const calFactorInput = document.getElementById("calFactor-input");
+    return calFactorInput.value;
   }
   closePopup(id = this.popupId) {
     document.getElementById(id).style.display = "none";

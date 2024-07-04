@@ -1,6 +1,7 @@
 {
     "cSpell.words": [
         "Adafruit",
+        "CALWEIGHT",
         "DELTAY",
         "EEPROM",
         "LOADCELL",
@@ -9,5 +10,5 @@
         "XIAO",
         "XPOS",
         "YPOS"
-    ]
+    ],
 }

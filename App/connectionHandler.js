@@ -176,9 +176,9 @@ class ConnectionHandler {
     console.log("taring");
     this.sendCommand("tare");
   }
-  calibrate(knownWeight) {
-    console.log("calibrating with weight", knownWeight);
-    this.sendCommand(`calibrate:${knownWeight}`);
+  calibrate(calFactor) {
+    console.log("calibrating with factor", calFactor);
+    this.sendCommand(`calibrate:${calFactor}`);
   }
   getData() {
     return { x: this.xData, y: this.yData };
