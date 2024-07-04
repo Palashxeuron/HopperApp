@@ -264,8 +264,8 @@ class App {
     if (this.connectionCheckLoop) clearInterval(this.connectionCheckLoop);
     console.log("starting connection check loop");
     this.connectionCheckLoop = setInterval(() => {
-      console.log("checking connection");
       if (Date.now() - this.latestMessageTimeStamp > 30000) {
+        console.log("checking connection");
         // only send the still Connected message to scale if
         // we have not received any message for 30 seconds
         bt.stillConnected();
