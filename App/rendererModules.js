@@ -801,6 +801,8 @@ class CalibrationPopup {
     this.calibrateButton = document.querySelector("#calibrate-button");
     this.calibrateButton.onclick = async () => {
       const factor = this.readFactor();
+      // save factor somewhere permanently
+      localStorage.setItem("calibrationFactor", factor);
       bt.calibrate(factor);
     };
   }

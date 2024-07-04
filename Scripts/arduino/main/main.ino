@@ -476,11 +476,17 @@ void drawHomePage(const HomePageState &state)
   // Draw weight information
   display.setTextSize(1);
   display.setTextColor(SH110X_WHITE);
-  display.setCursor(0, 40);
+  display.setCursor(0, 38);
   display.print("Weight: ");
   display.print(state.weight);
   display.print(" ");
   display.println(state.units);
+
+  display.setTextSize(1);
+  display.setTextColor(SH110X_WHITE);
+  display.setCursor(0, 50);
+  display.print("CalFactor: ");
+  display.print(LOADCELL_CALIBRATION_FACTOR);
 
   // // Draw additional information
   // display.setTextSize(1);
