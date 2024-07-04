@@ -111,6 +111,7 @@ void Bt_Connect_Callback(esp_spp_cb_event_t event, esp_spp_cb_param_t *param)
   else if (event == ESP_SPP_CLOSE_EVT)
   {
     log("Client Disconnected");
+    sendToArduino("disconnect");
     CONNECTED = false;
     // Do stuff if not connected
   }
