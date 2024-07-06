@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Your Blood Report</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        .header { text-align: center; margin-bottom: 20px; }
+        .header img { height: 50px; }
+        .section { margin-bottom: 20px; }
+        .section h2 { border-bottom: 1px solid #ddd; padding-bottom: 5px; }
+        table { width: 100%; border-collapse: collapse; }
+        table, th, td { border: 1px solid #ddd; }
+        th, td { padding: 8px; text-align: left; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <img src="<%= logo %>" alt="Logo" />
+        <h1><%= medicalName %></h1>
+    </div>
+    <div class="section">
+        <h2>Patient Information</h2>
+        <p><strong>Name:</strong> <%= patientName %></p>
+        <p><strong>Age:</strong> <%= age %></p>
+        <p><strong>Gender:</strong> <%= gender %></p>
+        <p><strong>Doctor:</strong> <%= doctorName %></p>
+    </div>
+    <div class="section">
+        <h2>Test Results</h2>
+        <table>
+            <tr><th>Test</th><th>Result</th><th>Reference Range</th></tr>
+            <% tests.forEach(test => { %>
+                <tr><td><%= test.name %></td><td><%= test.result %></td><td><%= test.range %></td></tr>
+            <% }); %>
+        </table>
+    </div>
+</body>
+</html>

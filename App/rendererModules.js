@@ -1,13 +1,36 @@
+class Utils {
+  getDateTimeString(date = new Date()) {
+    const year = date.getFullYear().toString().padStart(4, "0");
+    const month = (date.getMonth() + 1).toString().padStart(2, "0");
+    const day = date.getDate().toString().padStart(2, "0");
+    const hours = date.getHours().toString().padStart(2, "0");
+    const minutes = date.getMinutes().toString().padStart(2, "0");
+    const seconds = date.getSeconds().toString().padStart(2, "0");
+    return `${year}-${month}-${day}_${hours}-${minutes}-${seconds}`;
+  }
+}
+const utils = new Utils();
 class App {
   constructor() {
     this.logger = new LoggerClass(this);
     this.settings = new SettingsPanel(this);
     this.creepTestPanel = new CreepTestPanel(this);
+    this.trialPanel = new TrialPanel(this);
     this.calibrationPopup = new CalibrationPopup(this);
     this.chart = new ChartClass(this);
     this.stillConnected = false;
+    this.onGoingTest = false; // flag to check if a test is ongoing
+    this.isPlotting = false;
     this.connectionCheckLoop = null;
     this.latestMessageTimeStamp = null;
+    this.currentCreepTestId = null;
+    this.currentHysteresisTestId = null;
+    this.testStartTime = null;
+    this.testStopTime = null;
+    this.maxDataSize = 100 * 1024 * 1024; // 100 MB in bytes
+    this.data = [];
+    this.testData = [];
+    this.dataSize = 0;
     this.bottomBarItems = [
       {
         id: "paired",
@@ -160,25 +183,19 @@ class App {
         position: 2,
       },
       {
-        id: "start",
-        placeholder: "Start",
-        onHover: "Start test",
-        type: "button",
-        onClick: async () => {
-          bt.startCollectingWeight();
+        id: "hopperTrial",
+        placeholder: "HopperFlow Trial",
+        onHover: "HopperFlow Trial",
+        type: "popup",
+        popup: {
+          id: "hopperTrialPopup",
+          title: "Hopper Flow Trial specifications",
+          onClose: () => {},
+          onOpen: async () => {},
+          onCreate: async () => {
+            await this.trialPanel.create();
+          },
         },
-        onCreate: async () => {},
-        position: 2,
-      },
-      {
-        id: "stop",
-        placeholder: "Stop",
-        onHover: "Stop test",
-        type: "button",
-        onClick: async () => {
-          bt.stopCollectingWeight();
-        },
-        onCreate: async () => {},
         position: 2,
       },
       {
@@ -243,6 +260,23 @@ class App {
     this.rightBar.create();
     this.logger.init();
   }
+  saveData(weight, time) {
+    const newData = { weight, time };
+    const newDataSize = JSON.stringify(newData).length;
+    this.onGoingTest ? this.testData.push(newData) : null;
+    if (this.dataSize + newDataSize <= this.maxDataSize) {
+      this.data.push(newData);
+      this.dataSize += newDataSize;
+    } else {
+      // Remove oldest data until there is enough space for the new data
+      while (this.dataSize + newDataSize > this.maxDataSize) {
+        const oldestData = this.data.shift();
+        this.dataSize -= JSON.stringify(oldestData).length;
+      }
+      this.data.push(newData);
+      this.dataSize += newDataSize;
+    }
+  }
   getAboutContent() {
     const container = document.createElement("div");
     container.id = "about-container";
@@ -255,7 +289,10 @@ class App {
     return container;
   }
   connectionCheck() {
-    if (this.stillConnected && Date.now() - this.lastStillConnected > 30000) {
+    if (
+      this.stillConnected &&
+      Date.now() - this.latestMessageTimeStamp > 20000
+    ) {
       this.stillConnected = false;
       logger.logMessage("Port closed");
     }
@@ -264,10 +301,10 @@ class App {
     if (this.connectionCheckLoop) clearInterval(this.connectionCheckLoop);
     console.log("starting connection check loop");
     this.connectionCheckLoop = setInterval(() => {
-      if (Date.now() - this.latestMessageTimeStamp > 30000) {
+      if (Date.now() - this.latestMessageTimeStamp > 5000) {
         console.log("checking connection");
         // only send the still Connected message to scale if
-        // we have not received any message for 30 seconds
+        // we have not received any message for 15 seconds
         bt.stillConnected();
       }
       this.connectionCheck.bind(this);
@@ -278,6 +315,7 @@ class App {
     if (this.connectionCheckLoop) clearInterval(this.connectionCheckLoop);
   }
 }
+
 class BottomBar {
   constructor(parent) {
     this.parent = parent;
@@ -501,14 +539,169 @@ class SettingsPanel {
     document.getElementById(id).style.display = "none";
   }
 }
+class TrialPanel {
+  constructor(parent) {
+    this.parent = parent;
+    this.popupId = "hopperTrial";
+    this.duration = 100;
+    this.load = 100;
+    this.init();
+    this.initDone = this.init();
+    this.startButton = document.getElementById("start-hopperTrial-button");
+    this.stopButton = document.getElementById("stop-hopperTrial-button");
+    this.startButtonEnabled = true;
+  }
+  isReady() {
+    return this.initDone;
+  }
+  async init() {}
+  // create settings panel that let user select port from a dropdown and select save path opening a file dialog
+  async create() {
+    // make sure init is done with isReady
+    await this.isReady();
+    const hopperTrialPanel = document.createElement("div");
+    hopperTrialPanel.id = "hopperTrial-panel";
+
+    // Create save path input
+    const loadLabel = document.createElement("label");
+    loadLabel.innerHTML = "Load in gms :";
+    const loadInput = document.createElement("input");
+    loadInput.type = "text";
+    loadInput.id = "hopperTrial-load-input";
+    loadInput.value = "100";
+
+    loadLabel.appendChild(loadInput);
+    // Create save path input
+    const durationLabel = document.createElement("label");
+    durationLabel.innerHTML = "Duration (min) :";
+    const durationInput = document.createElement("input");
+    durationInput.type = "text";
+    durationInput.id = "hopperTrial-duration-input";
+    durationInput.value = "100";
+
+    durationLabel.appendChild(durationInput);
+    // Create save settings button
+    const startTestButton = document.createElement("button");
+    startTestButton.innerHTML = "Start hopper trial";
+    startTestButton.id = "start-hopperTrial-button";
+    const stopTestButton = document.createElement("button");
+    stopTestButton.innerHTML = "Stop hopper trial";
+    stopTestButton.id = "stop-hopperTrial-button";
+    stopTestButton.style.display = "none";
+
+    // Append all elements to the settings panel
+    hopperTrialPanel.appendChild(loadLabel);
+    hopperTrialPanel.appendChild(durationLabel);
+    hopperTrialPanel.appendChild(startTestButton);
+    hopperTrialPanel.appendChild(stopTestButton);
+    document
+      .querySelector("#hopperTrialPopup .popup-content")
+      .appendChild(hopperTrialPanel);
+    this.afterCreate();
+  }
+  afterCreate() {
+    this.startButton = document.getElementById("start-hopperTrial-button");
+    this.stopButton = document.getElementById("stop-hopperTrial-button");
+    this.loadInput = document.getElementById("hopperTrial-load-input");
+    this.durationInput = document.getElementById("hopperTrial-duration-input");
+    this.startButton.onclick = async () => {
+      this.testLoad = this.readLoad();
+      this.testDuration = this.readDuration();
+      this.startTest();
+    };
+    this.stopButton.onclick = async () => {
+      this.stopTest();
+    };
+  }
+  readLoad() {
+    const loadInput = document.getElementById("hopperTrial-load-input");
+    return loadInput.value;
+  }
+  readDuration() {
+    const durationInput = document.getElementById("hopperTrial-duration-input");
+    return durationInput.value;
+  }
+  closePopup(id = this.popupId) {
+    document.getElementById(id).style.display = "none";
+  }
+  startTest() {
+    // generate a test id using dateTime and save it to this.parent.currentCreepTestId
+    this.parent.chart.resetChart();
+    this.parent.testStartTime = new Date();
+    this.parent.testStopTime = null;
+    this.parent.currentCreepTestId = utils.getDateTimeString(
+      this.parent.testStartTime
+    );
+    this.parent.isPlotting = true;
+    console.log(this.parent.currentCreepTestId);
+    this.parent.onGoingTest = true;
+    this.toggleStartStopButton();
+    // disable load and duration input
+    this.loadInput.disabled = true;
+    this.durationInput.disabled = true;
+  }
+  writeData() {
+    // save data to file using this.parent.currentCreepTestId as filename
+    const data = this.parent.testData;
+    fileStorage.writeData({
+      id: this.parent.currentCreepTestId,
+      filename: `HopperTrial_${this.parent.currentCreepTestId}_data`,
+      data: data,
+      type: "json",
+      load: this.testLoad,
+      duration: this.testDuration,
+      startTime: this.parent.testStartTime,
+      stopTime: this.parent.testStopTime,
+    });
+  }
+  generateReport() {
+    // generate report using data and save it to file using this.parent.currentCreepTestId as filename
+    fileStorage.generateReport({
+      id: this.parent.currentCreepTestId,
+      filename: `HopperTrial${this.parent.currentCreepTestId}_report`,
+      // data: this.parent.data, // better to pull the data from the file using the id
+      type: "json",
+      reportTemplate: "hopperTrial",
+      load: this.testLoad,
+      duration: this.testDuration,
+    });
+  }
+  stopTest() {
+    this.parent.onGoingTest = false;
+    this.parent.isPlotting = false;
+    this.parent.testStopTime = new Date();
+    this.writeData();
+    this.generateReport();
+    this.toggleStartStopButton();
+    this.parent.testData = [];
+    // enable load and duration input
+    this.loadInput.disabled = false;
+    this.durationInput.disabled = false;
+  }
+  toggleStartStopButton() {
+    // enable the stop button
+    if (this.startButtonEnabled) {
+      this.startButtonEnabled = false;
+      this.startButton.style.display = "none";
+      this.stopButton.style.display = "block";
+    } else {
+      this.startButtonEnabled = true;
+      this.startButton.style.display = "block";
+      this.stopButton.style.display = "none";
+    }
+  }
+}
 class CreepTestPanel {
   constructor(parent) {
     this.parent = parent;
     this.popupId = "creepTest";
     this.duration = 100;
-    this.load = 0;
+    this.load = 100;
     this.init();
     this.initDone = this.init();
+    this.startButton = document.getElementById("start-creep-test-button");
+    this.stopButton = document.getElementById("stop-creep-test-button");
+    this.startButtonEnabled = true;
   }
   isReady() {
     return this.initDone;
@@ -526,7 +719,8 @@ class CreepTestPanel {
     loadLabel.innerHTML = "Load in gms :";
     const loadInput = document.createElement("input");
     loadInput.type = "text";
-    loadInput.id = "save-path-input";
+    loadInput.id = "creep-test-load-input";
+    loadInput.value = "100";
 
     loadLabel.appendChild(loadInput);
     // Create save path input
@@ -534,26 +728,119 @@ class CreepTestPanel {
     durationLabel.innerHTML = "Duration (min) :";
     const durationInput = document.createElement("input");
     durationInput.type = "text";
-    durationInput.id = "save-path-input";
+    durationInput.id = "creep-test-duration-input";
+    durationInput.value = "100";
 
     durationLabel.appendChild(durationInput);
     // Create save settings button
     const startTestButton = document.createElement("button");
     startTestButton.innerHTML = "Start creep test";
     startTestButton.id = "start-creep-test-button";
+    const stopTestButton = document.createElement("button");
+    stopTestButton.innerHTML = "Stop creep test";
+    stopTestButton.id = "stop-creep-test-button";
+    stopTestButton.style.display = "none";
 
     // Append all elements to the settings panel
     creepTestPanel.appendChild(loadLabel);
     creepTestPanel.appendChild(durationLabel);
     creepTestPanel.appendChild(startTestButton);
+    creepTestPanel.appendChild(stopTestButton);
     document
       .querySelector("#creepTestPopup .popup-content")
       .appendChild(creepTestPanel);
     this.afterCreate();
   }
-  afterCreate() {}
+  afterCreate() {
+    this.startButton = document.getElementById("start-creep-test-button");
+    this.stopButton = document.getElementById("stop-creep-test-button");
+    this.loadInput = document.getElementById("creep-test-load-input");
+    this.durationInput = document.getElementById("creep-test-duration-input");
+    this.startButton.onclick = async () => {
+      this.testLoad = this.readLoad();
+      this.testDuration = this.readDuration();
+      this.startTest();
+    };
+    this.stopButton.onclick = async () => {
+      this.stopTest();
+    };
+  }
+  readLoad() {
+    const loadInput = document.getElementById("creep-test-load-input");
+    return loadInput.value;
+  }
+  readDuration() {
+    const durationInput = document.getElementById("creep-test-duration-input");
+    return durationInput.value;
+  }
   closePopup(id = this.popupId) {
     document.getElementById(id).style.display = "none";
+  }
+  startTest() {
+    // generate a test id using dateTime and save it to this.parent.currentCreepTestId
+    this.parent.chart.resetChart();
+    this.parent.testStartTime = new Date();
+    this.parent.testStopTime = null;
+    this.parent.currentCreepTestId = utils.getDateTimeString(
+      this.parent.testStartTime
+    );
+    this.parent.isPlotting = true;
+    console.log(this.parent.currentCreepTestId);
+    this.parent.onGoingTest = true;
+    this.toggleStartStopButton();
+    // disable load and duration input
+    this.loadInput.disabled = true;
+    this.durationInput.disabled = true;
+  }
+  writeData() {
+    // save data to file using this.parent.currentCreepTestId as filename
+    const data = this.parent.testData;
+    fileStorage.writeData({
+      id: this.parent.currentCreepTestId,
+      filename: `CreepTest_${this.parent.currentCreepTestId}_data`,
+      data: data,
+      type: "json",
+      load: this.testLoad,
+      duration: this.testDuration,
+      startTime: this.parent.testStartTime,
+      stopTime: this.parent.testStopTime,
+    });
+  }
+  generateReport() {
+    // generate report using data and save it to file using this.parent.currentCreepTestId as filename
+    fileStorage.generateReport({
+      id: this.parent.currentCreepTestId,
+      filename: `CreepTest_${this.parent.currentCreepTestId}_report`,
+      // data: this.parent.data, // better to pull the data from the file using the id
+      type: "json",
+      reportTemplate: "creepTest",
+      load: this.testLoad,
+      duration: this.testDuration,
+    });
+  }
+  stopTest() {
+    this.parent.onGoingTest = false;
+    this.parent.isPlotting = false;
+    this.parent.testStopTime = new Date();
+    this.writeData();
+    this.generateReport();
+    this.toggleStartStopButton();
+    this.parent.testData = [];
+    // enable load and duration input
+    this.loadInput.disabled = false;
+    this.durationInput.disabled = false;
+  }
+  toggleStartStopButton() {
+    // enable the stop button
+    if (this.startButtonEnabled) {
+      this.startButtonEnabled = false;
+      this.startButton.style.display = "none";
+      this.stopButton.style.display = "block";
+    } else {
+      this.startButtonEnabled = true;
+      this.startButton.style.display = "block";
+      this.stopButton.style.display = "none";
+    }
   }
 }
 class ChartClass {
@@ -565,16 +852,15 @@ class ChartClass {
     this.init();
   }
   async init() {
-    await this.getChartData();
     // create chart with chart.js
     const ctx = this.canvas.getContext("2d");
     this.myChart = new Chart(ctx, {
       type: "line",
       data: {
-        labels: this.xData,
+        labels: this.xLabels,
         datasets: [
           {
-            label: "Rate of Mass",
+            label: "Weight vs Time",
             data: this.yData,
             backgroundColor: ["rgba(255, 99, 132, 0.2)"],
             borderColor: ["rgba(255, 99, 132, 1)"],
@@ -588,6 +874,14 @@ class ChartClass {
         scales: {
           y: {
             beginAtZero: true,
+            ticks: {
+              maxTicksLimit: 10, // Adjust this value as needed
+            },
+          },
+          x: {
+            ticks: {
+              maxTicksLimit: 15, // Adjust this value as needed
+            },
           },
         },
       },
@@ -595,19 +889,55 @@ class ChartClass {
     this.update();
   }
   async update() {
-    console.log("updating chart");
-    // get x and y data
-    await this.getChartData();
-    // update chart
-    this.myChart.data.labels = this.xData;
-    this.myChart.data.datasets[0].data = this.yData;
+    if (this.parent.isPlotting) {
+      console.log("updating chart");
+      // get x and y data
+      await this.refreshChartData();
+      // update chart
+      this.myChart.data.labels = this.xLabels;
+      this.myChart.data.datasets[0].data = this.yData;
+      // Redraw the chart
+      this.myChart.update();
+    }
     setTimeout(this.update.bind(this), this.chartUpdateInterval);
   }
-  async getChartData() {
-    bt.getChartData().then((data) => {
-      this.xData = data.x;
-      this.yData = data.y;
-    });
+  async refreshChartData() {
+    // console.log(this.parent.testData.length);
+    if (this.parent.testData.length > 0) {
+      this.xData = this.parent.testData.map(
+        (data) => new Date(data.time.trim())
+      );
+      this.xLabels = this.dateStr2xLabels();
+      this.yData = this.parent.testData.map((data) => parseFloat(data.weight));
+      // console.log("xData", this.xLabels, "yData", this.yData);
+    }
+  }
+  dateStr2xLabels() {
+    const formattedLabels = [];
+
+    const duration = this.xData[this.xData.length - 1] - this.xData[0]; // Duration in milliseconds
+
+    // Format as HH:mm
+    this.xData.forEach((date) =>
+      formattedLabels.push(
+        date.toLocaleTimeString("en-US", {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
+        })
+      )
+    );
+
+    // console.log("formattedLabels", formattedLabels);
+    return formattedLabels;
+  }
+  resetChart() {
+    this.xData = [];
+    this.yData = [];
+    this.xLabels = [];
+    this.myChart.data.labels = this.xLabels;
+    this.myChart.data.datasets[0].data = this.yData;
+    this.myChart.update();
   }
 }
 class LoggerClass {
@@ -628,25 +958,37 @@ class LoggerClass {
     // Listen for log messages from the main process
     logger.onLogMessage((message) => {
       if (message && message.length > 0) {
-        this.logs.push(message);
-        this.handleLogMessage();
+        this.parent.latestMessageTimeStamp = Date.now();
+        if (message.includes("WEIGHT:")) {
+          this.handleWeightMessage(message);
+        } else {
+          this.logs.push(message);
+          this.handleLogMessage(message);
+        }
         this.render();
       }
     });
     this.listenerAdded = true;
   }
-  handleLogMessage() {
-    this.parent.latestMessageTimeStamp = Date.now();
-    const message = this.logs[this.logs.length - 1];
-    // console.log("message", message);
-    if (message.includes("WEIGHT:")) {
-      // extract weight and time from message sent as
-      // String str = "WEIGHT: " + String(sensorRead) + " g" + ";TIME: " + String(millis()) + " ms";
-      const weight = message.split("WEIGHT: ")[1].split(" g")[0];
-      const time = message.split("TIME: ")[1].split(" ms")[0];
-      console.log("weight", weight);
-      console.log("time", time);
+  handleWeightMessage(message) {
+    // extract weight and time from message sent as
+    // String str = "WEIGHT: " + String(sensorRead) + " g" + ";TIME: " + String(millis()) + " ms";
+    const weight = message.split("WEIGHT: ")[1].split(" g")[0];
+    const time = message.split("TIME: ")[1].split(" ms")[0];
+    // console.log("weight", weight, "time", time);
+
+    this.parent.saveData(weight, time);
+
+    this.parent.lastStillConnected = Date.now();
+    if (this.parent.stillConnected === false) {
+      this.parent.stillConnected = true;
+      this.parent.connectButton.style.backgroundColor = "green";
+      this.parent.disconnectButton.style.backgroundColor = "red";
     }
+  }
+  handleLogMessage(message) {
+    // console.log("message", message);
+
     if (message.includes("ACK: connect")) {
       // do something
       console.log("connected");
@@ -686,7 +1028,8 @@ class LoggerClass {
       if (match) {
         const calibrationFactor = parseFloat(match[1]);
         const reading = parseFloat(match[3]);
-        document.getElementById("weight-calibration-reading").textContent = reading;
+        document.getElementById("weight-calibration-reading").textContent =
+          reading;
         console.log(
           `Calibration Factor: ${calibrationFactor}, Reading: ${reading}`
         );

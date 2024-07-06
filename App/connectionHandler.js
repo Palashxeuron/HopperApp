@@ -157,7 +157,7 @@ class ConnectionHandler {
           console.error(
             "Error writing to port:",
             this.smartScalePort.path,
-            err
+            err,"command was",command
           );
         }
       });

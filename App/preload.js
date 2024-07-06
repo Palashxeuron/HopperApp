@@ -14,13 +14,17 @@ contextBridge.exposeInMainWorld("bt", {
   getChartData: () => ipcRenderer.invoke("get-chart-data"),
   connectSmartScale: () => ipcRenderer.invoke("connect-smart-scale"),
   disconnect: () => ipcRenderer.invoke("disconnect"),
-  startTest: () => ipcRenderer.invoke("start-test"),
+  // startTest: () => ipcRenderer.invoke("start-test"),
   isPaired: () => ipcRenderer.invoke("is-paired"),
   tare: () => ipcRenderer.invoke("tare"),
   calibrate: (value) => ipcRenderer.invoke("calibrate", value),
-  startCollectingWeight: () => ipcRenderer.invoke("start-collecting-weight"),
-  stopCollectingWeight: () => ipcRenderer.invoke("stop-collecting-weight"),
+  // startCollectingWeight: () => ipcRenderer.invoke("start-collecting-weight"),
+  // stopCollectingWeight: () => ipcRenderer.invoke("stop-collecting-weight"),
   stillConnected: () => ipcRenderer.invoke("still-connected"),
+});
+contextBridge.exposeInMainWorld("fileStorage", {
+  writeData: (data) => ipcRenderer.invoke("save-file", data),
+  generateReport: (data) => ipcRenderer.invoke("generate-report", data),
 });
 
 contextBridge.exposeInMainWorld("logger", {

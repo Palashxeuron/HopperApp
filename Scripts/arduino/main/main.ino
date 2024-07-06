@@ -43,6 +43,8 @@ RtcDS3231<SoftwareWire> Rtc(rtcWire);
 #define countof(a) (sizeof(a) / sizeof(a[0]))
 float RTC_TEMP;
 String RTC_DATE_TIME_STR;
+unsigned long startOfSecondMillis = 0; // To store the millis() at the start of the current second
+byte lastSecond = 60;                  // Initialize to an impossible value for comparison
 
 // OLED init oled 1.3" i2c SH1106 128*64 libs
 #define i2c_Address 0x3c // initialize with the I2C addr 0x3C Typically eBay OLED's
@@ -159,7 +161,7 @@ void turnOnRTC()
   Rtc.Begin();
 
   RtcDateTime compiled = RtcDateTime(__DATE__, __TIME__);
-  RTC_DATE_TIME_STR = getDateTimeStr(compiled);
+  RTC_DATE_TIME_STR = getDateTimeStr(compiled,0);
   log("compiled: " + RTC_DATE_TIME_STR);
 
   if (!Rtc.IsDateTimeValid())
@@ -190,6 +192,7 @@ void turnOnRTC()
   }
 
   RtcDateTime now = Rtc.GetDateTime();
+  lastSecond = now.Second();
   if (!wasError("setup GetDateTime"))
   {
     if (now < compiled)
@@ -290,9 +293,17 @@ void readRtc()
   }
 
   RtcDateTime now = Rtc.GetDateTime();
+  if (now.Second() != lastSecond)
+  {
+    // A new second has started
+    startOfSecondMillis = millis();
+    lastSecond = now.Second();
+  }
+  // Calculate the milliseconds within the current second
+  unsigned long currentMillisWithinSecond = millis() - startOfSecondMillis;
   if (!wasError("loop GetDateTime"))
   {
-    RTC_DATE_TIME_STR = getDateTimeStr(now);
+    RTC_DATE_TIME_STR = getDateTimeStr(now, currentMillisWithinSecond);
     log(RTC_DATE_TIME_STR);
   }
 
@@ -311,15 +322,22 @@ void readLoadCell()
     // Read the data from the sensor
     const int sensorRead = scale.get_units(10);
     weight = sensorRead;
-    if(weight >= 1000){
-      weight = weight/1000;
+    if (weight >= 1000)
+    {
+      weight = weight / 1000;
       homePageState.units = "kg";
+    }else{
+      homePageState.units = "g";
     }
     String str = "WEIGHT: " + String(sensorRead) + " g" + ";TIME: " + RTC_DATE_TIME_STR;
     log(str);
     if (connected && STREAM_WEIGHT)
     {
       sendToESP32(str);
+    }
+    else
+    {
+      log("connected: " + String(connected) + "; STREAM_WEIGHT: " + String(STREAM_WEIGHT));
     }
   }
 }
@@ -358,11 +376,13 @@ void handleEsp32Request(String data)
     {
       log("ACK: Yes, I am Smart-Scale");
       sendToESP32("ACK: Yes, I am Smart-Scale");
+      STREAM_WEIGHT = true;
       connected = true;
     }
     if (request == "connect")
     {
       connected = true;
+      STREAM_WEIGHT = true;
       sendToESP32("ACK: connect");
     }
     if (request == "still connected")
@@ -373,7 +393,7 @@ void handleEsp32Request(String data)
     if (request == "disconnect")
     {
       connected = false;
-      STREAM_WEIGHT = false;
+      // STREAM_WEIGHT = false;
       sendToESP32("ACK: disconnect");
     }
     if (request == "getWeight")
@@ -595,19 +615,20 @@ bool isValidFloat(float value)
   // This is just an example and the actual validation logic will depend on your application's requirements
   return value > 0.0 && value < 10000.0;
 }
-String getDateTimeStr(const RtcDateTime &dt)
+String getDateTimeStr(const RtcDateTime &dt,unsigned long currMillisWithinSec)
 {
   char dateString[26];
 
   snprintf_P(dateString,
              countof(dateString),
-             PSTR("%02u/%02u/%04u %02u:%02u:%02u"),
+             PSTR("%02u/%02u/%04u %02u:%02u:%02u:%03u"),
              dt.Month(),
              dt.Day(),
              dt.Year(),
              dt.Hour(),
              dt.Minute(),
-             dt.Second());
+             dt.Second(),
+             currMillisWithinSec);
   return dateString;
 }
 bool wasError(const char *errorTopic = "")
