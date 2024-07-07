@@ -2,13 +2,11 @@ const puppeteer = require("puppeteer");
 const fs = require("fs");
 const ejs = require("ejs");
 const { dialog, app } = require("electron");
-const path = require("path");
+const path = require("node:path");
 
 class ReportGenerator {
   constructor(mainWindow) {
-    const userDataPath = (electron.app || electron.remote.app).getPath(
-      "userData"
-    );
+    const userDataPath = app.getPath("userData");
     this.dataDir = path.join(userDataPath, "Hopper_AppData");
     console.log("Hopper_AppData Directory: ", this.dataDir);
     if (!fs.existsSync(this.dataDir)) {
@@ -21,7 +19,7 @@ class ReportGenerator {
     this.data = data;
 
     try {
-      const filePath = `${this.dataDir}/${this.data.filename}.pdf` 
+      const filePath = `${this.dataDir}/${this.data.filename}.pdf`;
       const templateContent = this.#getTemplate();
       const htmlContent = ejs.render(templateContent, this.data);
       const browser = await puppeteer.launch();

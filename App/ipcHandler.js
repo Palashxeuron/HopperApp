@@ -67,6 +67,9 @@ class IpcHandler {
     ipcMain.handle("save-file", (event, data) => {
       return this.fileStorage.saveFile(data);
     });
+    ipcMain.handle("open-results-dir", (event) => {
+      return this.fileStorage.openResultsDir();
+    });
     ipcMain.handle("generate-report", (event, data) => {
       return this.reportGenerator.generatePdf(data);
     });

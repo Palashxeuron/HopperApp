@@ -15,6 +15,7 @@ class App {
     this.logger = new LoggerClass(this);
     this.settings = new SettingsPanel(this);
     this.creepTestPanel = new CreepTestPanel(this);
+    this.hysteresisTestPanel = new HysteresisTestPanel(this);
     this.trialPanel = new TrialPanel(this);
     this.calibrationPopup = new CalibrationPopup(this);
     this.chart = new ChartClass(this);
@@ -218,12 +219,28 @@ class App {
         id: "hysteresisTest",
         placeholder: "Hysteresis Test",
         onHover: "Hysteresis test",
+        type: "popup",
+        popup: {
+          id: "hysteresisTestPopup",
+          title: "Hysteresis Test",
+          onClose: () => {},
+          onOpen: async () => {},
+          onCreate: async () => {
+            await this.hysteresisTestPanel.create();
+          },
+        },
+        position: 2,
+      },
+      {
+        id: "openResults",
+        placeholder: "Open Results",
+        onHover: "Open Results",
         type: "button",
         onClick: async () => {
-          bt.startCreepTest();
+          fileStorage.openResultDir();
         },
         onCreate: async () => {},
-        position: 2,
+        position: 10,
       },
       {
         id: "about",
@@ -543,8 +560,9 @@ class TrialPanel {
   constructor(parent) {
     this.parent = parent;
     this.popupId = "hopperTrial";
-    this.duration = 100;
-    this.load = 100;
+    this.chainLengthInput = 1;
+    this.angleInput = 60;
+    this.widthInput = 1;
     this.init();
     this.initDone = this.init();
     this.startButton = document.getElementById("start-hopperTrial-button");
@@ -562,24 +580,33 @@ class TrialPanel {
     const hopperTrialPanel = document.createElement("div");
     hopperTrialPanel.id = "hopperTrial-panel";
 
-    // Create save path input
-    const loadLabel = document.createElement("label");
-    loadLabel.innerHTML = "Load in gms :";
-    const loadInput = document.createElement("input");
-    loadInput.type = "text";
-    loadInput.id = "hopperTrial-load-input";
-    loadInput.value = "100";
+    // Create chainLength input
+    const chainLengthLabel = document.createElement("label");
+    chainLengthLabel.innerHTML = "chainLength, N :";
+    const chainLengthInput = document.createElement("input");
+    chainLengthInput.type = "text";
+    chainLengthInput.id = "hopperTrial-chainLength-input";
+    chainLengthInput.value = "1";
+    chainLengthLabel.appendChild(chainLengthInput);
 
-    loadLabel.appendChild(loadInput);
     // Create save path input
-    const durationLabel = document.createElement("label");
-    durationLabel.innerHTML = "Duration (min) :";
-    const durationInput = document.createElement("input");
-    durationInput.type = "text";
-    durationInput.id = "hopperTrial-duration-input";
-    durationInput.value = "100";
+    const angleLabel = document.createElement("label");
+    angleLabel.innerHTML = "angle (deg) :";
+    const angleInput = document.createElement("input");
+    angleInput.type = "text";
+    angleInput.id = "hopperTrial-angle-input";
+    angleInput.value = "60";
+    angleLabel.appendChild(angleInput);
 
-    durationLabel.appendChild(durationInput);
+    // Create save path input
+    const widthLabel = document.createElement("label");
+    widthLabel.innerHTML = "width (cm) :";
+    const widthInput = document.createElement("input");
+    widthInput.type = "text";
+    widthInput.id = "hopperTrial-width-input";
+    widthInput.value = "1";
+    widthLabel.appendChild(widthInput);
+
     // Create save settings button
     const startTestButton = document.createElement("button");
     startTestButton.innerHTML = "Start hopper trial";
@@ -590,8 +617,9 @@ class TrialPanel {
     stopTestButton.style.display = "none";
 
     // Append all elements to the settings panel
-    hopperTrialPanel.appendChild(loadLabel);
-    hopperTrialPanel.appendChild(durationLabel);
+    hopperTrialPanel.appendChild(chainLengthLabel);
+    hopperTrialPanel.appendChild(angleLabel);
+    hopperTrialPanel.appendChild(widthLabel);
     hopperTrialPanel.appendChild(startTestButton);
     hopperTrialPanel.appendChild(stopTestButton);
     document
@@ -602,8 +630,167 @@ class TrialPanel {
   afterCreate() {
     this.startButton = document.getElementById("start-hopperTrial-button");
     this.stopButton = document.getElementById("stop-hopperTrial-button");
-    this.loadInput = document.getElementById("hopperTrial-load-input");
-    this.durationInput = document.getElementById("hopperTrial-duration-input");
+    this.chainLengthInput = document.getElementById(
+      "hopperTrial-chainLength-input"
+    );
+    this.angleInput = document.getElementById("hopperTrial-angle-input");
+    this.widthInput = document.getElementById("hopperTrial-width-input");
+    this.startButton.onclick = async () => {
+      this.testChainLength = this.readInput("hopperTrial-chainLength-input");
+      this.testAngle = this.readInput("hopperTrial-angle-input");
+      this.testWidth = this.readInput("hopperTrial-width-input");
+      this.startTest();
+    };
+    this.stopButton.onclick = async () => {
+      this.stopTest();
+    };
+  }
+  readInput(inputElementId) {
+    const input = document.getElementById(inputElementId);
+    return input.value;
+  }
+  closePopup(id = this.popupId) {
+    document.getElementById(id).style.display = "none";
+  }
+  startTest() {
+    // generate a test id using dateTime and save it to this.parent.currentCreepTestId
+    this.parent.chart.resetChart();
+    this.parent.testStartTime = new Date();
+    this.parent.testStopTime = null;
+    this.parent.currentHopperTrialId = utils.getDateTimeString(
+      this.parent.testStartTime
+    );
+    this.parent.isPlotting = true;
+    console.log(this.parent.currentHopperTrialId);
+    this.parent.onGoingTest = true;
+    this.toggleStartStopButton();
+    // disable load and duration input
+    this.disableInputs();
+  }
+  disableInputs(disable = true) {
+    this.chainLengthInput.disabled = disable;
+    this.angleInput.disabled = disable;
+    this.widthInput.disabled = disable;
+  }
+  writeData() {
+    // save data to file using this.parent.currentCreepTestId as filename
+    const data = this.parent.testData;
+    fileStorage.writeData({
+      id: this.parent.currentHopperTrialId,
+      test: "hopperTrial",
+      filename: `HopperTrial_${this.parent.currentHopperTrialId}_data`,
+      data: data,
+      type: "json",
+      chainLength: this.testChainLength,
+      angle: this.testAngle,
+      width: this.testWidth,
+      startTime: this.parent.testStartTime,
+      stopTime: this.parent.testStopTime,
+    });
+  }
+  generateReport() {
+    // generate report using data and save it to file using this.parent.currentCreepTestId as filename
+    fileStorage.generateReport({
+      id: this.parent.currentCreepTestId,
+      filename: `HopperTrial${this.parent.currentCreepTestId}_report`,
+      // data: this.parent.data, // better to pull the data from the file using the id
+      type: "pdf",
+      reportTemplate: "hopperTrial",
+      chainLength: this.testChainLength,
+      angle: this.testAngle,
+      width: this.testWidth,
+    });
+  }
+  stopTest() {
+    this.parent.onGoingTest = false;
+    this.parent.isPlotting = false;
+    this.parent.testStopTime = new Date();
+    this.writeData();
+    // this.generateReport();
+    this.toggleStartStopButton();
+    this.parent.testData = [];
+    this.parent.currentHopperTrialId = null;
+    // enable load and duration input
+    this.disableInputs(false);
+  }
+  toggleStartStopButton() {
+    // enable the stop button
+    if (this.startButtonEnabled) {
+      this.startButtonEnabled = false;
+      this.startButton.style.display = "none";
+      this.stopButton.style.display = "block";
+    } else {
+      this.startButtonEnabled = true;
+      this.startButton.style.display = "block";
+      this.stopButton.style.display = "none";
+    }
+  }
+}
+class HysteresisTestPanel {
+  constructor(parent) {
+    this.parent = parent;
+    this.popupId = "hysteresisTest";
+    this.duration = 100;
+    this.load = 100;
+    this.init();
+    this.initDone = this.init();
+    this.startButton = document.getElementById("start-hysteresisTest-button");
+    this.stopButton = document.getElementById("stop-hysteresisTest-button");
+    this.startButtonEnabled = true;
+  }
+  isReady() {
+    return this.initDone;
+  }
+  async init() {}
+  // create settings panel that let user select port from a dropdown and select save path opening a file dialog
+  async create() {
+    // make sure init is done with isReady
+    await this.isReady();
+    const hysteresisTestPanel = document.createElement("div");
+    hysteresisTestPanel.id = "hysteresisTest-panel";
+
+    // Create save path input
+    const loadLabel = document.createElement("label");
+    loadLabel.innerHTML = "Load in gms :";
+    const loadInput = document.createElement("input");
+    loadInput.type = "text";
+    loadInput.id = "hysteresisTest-load-input";
+    loadInput.value = "100";
+
+    loadLabel.appendChild(loadInput);
+    // Create save path input
+    const durationLabel = document.createElement("label");
+    durationLabel.innerHTML = "Duration (min) :";
+    const durationInput = document.createElement("input");
+    durationInput.type = "text";
+    durationInput.id = "hysteresisTest-duration-input";
+    durationInput.value = "100";
+
+    durationLabel.appendChild(durationInput);
+    // Create save settings button
+    const startTestButton = document.createElement("button");
+    startTestButton.innerHTML = "Start hysteresis test";
+    startTestButton.id = "start-hysteresisTest-button";
+    const stopTestButton = document.createElement("button");
+    stopTestButton.innerHTML = "Stop hysteresis test";
+    stopTestButton.id = "stop-hysteresisTest-button";
+    stopTestButton.style.display = "none";
+
+    // Append all elements to the settings panel
+    hysteresisTestPanel.appendChild(loadLabel);
+    hysteresisTestPanel.appendChild(durationLabel);
+    hysteresisTestPanel.appendChild(startTestButton);
+    hysteresisTestPanel.appendChild(stopTestButton);
+    document
+      .querySelector("#hysteresisTestPopup .popup-content")
+      .appendChild(hysteresisTestPanel);
+    this.afterCreate();
+  }
+  afterCreate() {
+    this.startButton = document.getElementById("start-hysteresisTest-button");
+    this.stopButton = document.getElementById("stop-hysteresisTest-button");
+    this.loadInput = document.getElementById("hysteresisTest-load-input");
+    this.durationInput = document.getElementById("hysteresisTest-duration-input");
     this.startButton.onclick = async () => {
       this.testLoad = this.readLoad();
       this.testDuration = this.readDuration();
@@ -614,26 +801,26 @@ class TrialPanel {
     };
   }
   readLoad() {
-    const loadInput = document.getElementById("hopperTrial-load-input");
+    const loadInput = document.getElementById("hysteresisTest-load-input");
     return loadInput.value;
   }
   readDuration() {
-    const durationInput = document.getElementById("hopperTrial-duration-input");
+    const durationInput = document.getElementById("hysteresisTest-duration-input");
     return durationInput.value;
   }
   closePopup(id = this.popupId) {
     document.getElementById(id).style.display = "none";
   }
   startTest() {
-    // generate a test id using dateTime and save it to this.parent.currentCreepTestId
+    // generate a test id using dateTime and save it to this.parent.currentHysteresisTestId
     this.parent.chart.resetChart();
     this.parent.testStartTime = new Date();
     this.parent.testStopTime = null;
-    this.parent.currentCreepTestId = utils.getDateTimeString(
+    this.parent.currentHysteresisTestId = utils.getDateTimeString(
       this.parent.testStartTime
     );
     this.parent.isPlotting = true;
-    console.log(this.parent.currentCreepTestId);
+    console.log(this.parent.currentHysteresisTestId);
     this.parent.onGoingTest = true;
     this.toggleStartStopButton();
     // disable load and duration input
@@ -641,11 +828,12 @@ class TrialPanel {
     this.durationInput.disabled = true;
   }
   writeData() {
-    // save data to file using this.parent.currentCreepTestId as filename
+    // save data to file using this.parent.currentHysteresisTestId as filename
     const data = this.parent.testData;
     fileStorage.writeData({
-      id: this.parent.currentCreepTestId,
-      filename: `HopperTrial_${this.parent.currentCreepTestId}_data`,
+      id: this.parent.currentHysteresisTestId,
+      test: "Hysteresis",
+      filename: `HysteresisTest_${this.parent.currentHysteresisTestId}_data`,
       data: data,
       type: "json",
       load: this.testLoad,
@@ -657,11 +845,11 @@ class TrialPanel {
   generateReport() {
     // generate report using data and save it to file using this.parent.currentCreepTestId as filename
     fileStorage.generateReport({
-      id: this.parent.currentCreepTestId,
-      filename: `HopperTrial${this.parent.currentCreepTestId}_report`,
+      id: this.parent.currentHysteresisTestId,
+      filename: `HysteresisTest_${this.parent.currentHysteresisTestId}_report`,
       // data: this.parent.data, // better to pull the data from the file using the id
       type: "json",
-      reportTemplate: "hopperTrial",
+      reportTemplate: "HysteresisTest",
       load: this.testLoad,
       duration: this.testDuration,
     });
@@ -671,9 +859,10 @@ class TrialPanel {
     this.parent.isPlotting = false;
     this.parent.testStopTime = new Date();
     this.writeData();
-    this.generateReport();
+    // this.generateReport();
     this.toggleStartStopButton();
     this.parent.testData = [];
+    this.parent.currentHysteresisTestId = null;
     // enable load and duration input
     this.loadInput.disabled = false;
     this.durationInput.disabled = false;
@@ -797,6 +986,7 @@ class CreepTestPanel {
     const data = this.parent.testData;
     fileStorage.writeData({
       id: this.parent.currentCreepTestId,
+      test: "creep",
       filename: `CreepTest_${this.parent.currentCreepTestId}_data`,
       data: data,
       type: "json",
@@ -823,9 +1013,10 @@ class CreepTestPanel {
     this.parent.isPlotting = false;
     this.parent.testStopTime = new Date();
     this.writeData();
-    this.generateReport();
+    // this.generateReport();
     this.toggleStartStopButton();
     this.parent.testData = [];
+    this.parent.currentCreepTestId = null;
     // enable load and duration input
     this.loadInput.disabled = false;
     this.durationInput.disabled = false;

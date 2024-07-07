@@ -8,7 +8,7 @@ class FileStorage {
       "userData"
     );
     this.dataDir = path.join(userDataPath, "Hopper_AppData");
-    console.log("Hopper_AppData Directory: ", this.dataDir);
+    // console.log("Hopper_AppData Directory: ", this.dataDir);
     if (!fs.existsSync(this.dataDir)) {
       fs.mkdirSync(this.dataDir);
     }
@@ -16,10 +16,26 @@ class FileStorage {
 
   saveFile(dataJson) {
     const filename = dataJson.filename;
-    console.log("Saving data to file: ", filename);
-    console.log("Data: ", dataJson);
+    let filePath = path.join(this.dataDir, `${filename}.json`);
+    // console.log("Saving data to file: ", filename);
+    // console.log("Data: ", dataJson);
+    // check if datajson has key chainLength
+    if (dataJson.test === "hopperTrial") {
+      const N = dataJson.chainLength;
+      const angle = dataJson.angle.replace(/\./g, "_");
+      const width = dataJson.width.replace(/\./g, "_");
+      const saveDir = path.join(
+        this.dataDir,
+        `N${N}`,
+        `Angle_${angle}`,
+        `Width_${width}`
+      );
+      filePath = path.join(saveDir, `${filename}.json`);
+      if (!fs.existsSync(saveDir)) {
+        fs.mkdirSync(saveDir, { recursive: true });
+      }
+    }
     try {
-      const filePath = path.join(this.dataDir, `${filename}.json`);
       // save the data to the file
       fs.writeFileSync(filePath, JSON.stringify(dataJson));
     } catch (error) {
@@ -37,6 +53,10 @@ class FileStorage {
       console.error(`Error reading data from "${filename}": ${error.message}`);
     }
     return null;
+  }
+  openResultsDir() {
+    console.log("Opening results directory: ", this.dataDir);
+    electron.shell.openPath(this.dataDir);
   }
 }
 
