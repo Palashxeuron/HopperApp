@@ -232,8 +232,22 @@ class App {
         position: 2,
       },
       {
+        id: "loadResults",
+        placeholder: "Load Results",
+        onHover: "Load Results",
+        type: "button",
+        onClick: async () => {
+          const file = await fileStorage.selectFile();
+          const resultJson = await fileStorage.getFile(file);
+          this.loadResults(resultJson);
+          // console.log("results", resultJson);
+        },
+        onCreate: async () => {},
+        position: 10,
+      },
+      {
         id: "openResults",
-        placeholder: "Open Results",
+        placeholder: "Open Results dir",
         onHover: "Open Results",
         type: "button",
         onClick: async () => {
@@ -280,7 +294,22 @@ class App {
   saveData(weight, time) {
     const newData = { weight, time };
     const newDataSize = JSON.stringify(newData).length;
-    this.onGoingTest ? this.testData.push(newData) : null;
+    if (this.onGoingTest) {
+      this.testData.push(newData);
+      // check is testDuration is longer than testStartTime to now
+      if (this.testStartTime && this.testDuration) {
+        if (Date.now() - this.testStartTime > this.testDuration * 60000) {
+          this.stopTest();
+        } else {
+          console.log(
+            "time remaining",
+            (this.testDuration * 60000 - (Date.now() - this.testStartTime)) /
+              1000,
+            "seconds"
+          );
+        }
+      }
+    }
     if (this.dataSize + newDataSize <= this.maxDataSize) {
       this.data.push(newData);
       this.dataSize += newDataSize;
@@ -330,6 +359,30 @@ class App {
   stopConnectionCheckLoop() {
     console.log("stopping connection check loop");
     if (this.connectionCheckLoop) clearInterval(this.connectionCheckLoop);
+  }
+  loadResults(resultJson) {
+    const chartData = resultJson.data;
+    const xData = chartData.map((data) => new Date(data.time.trim()));
+    const xLabels = [];
+
+    const duration = xData[xData.length - 1] - xData[0]; // Duration in milliseconds
+
+    // Format as HH:mm
+    // biome-ignore lint/complexity/noForEach: <explanation>
+    xData.forEach((date) =>
+      xLabels.push(
+        date.toLocaleTimeString("en-US", {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
+        })
+      )
+    );
+    const yData = chartData.map((data) => Number.parseFloat(data.weight));
+    // update chart
+    this.chart.myChart.data.labels = xLabels;
+    this.chart.myChart.data.datasets[0].data = yData;
+    this.chart.myChart.update();
   }
 }
 
@@ -790,10 +843,12 @@ class HysteresisTestPanel {
     this.startButton = document.getElementById("start-hysteresisTest-button");
     this.stopButton = document.getElementById("stop-hysteresisTest-button");
     this.loadInput = document.getElementById("hysteresisTest-load-input");
-    this.durationInput = document.getElementById("hysteresisTest-duration-input");
+    this.durationInput = document.getElementById(
+      "hysteresisTest-duration-input"
+    );
     this.startButton.onclick = async () => {
       this.testLoad = this.readLoad();
-      this.testDuration = this.readDuration();
+      this.parent.testDuration = this.readDuration();
       this.startTest();
     };
     this.stopButton.onclick = async () => {
@@ -805,7 +860,9 @@ class HysteresisTestPanel {
     return loadInput.value;
   }
   readDuration() {
-    const durationInput = document.getElementById("hysteresisTest-duration-input");
+    const durationInput = document.getElementById(
+      "hysteresisTest-duration-input"
+    );
     return durationInput.value;
   }
   closePopup(id = this.popupId) {
@@ -823,6 +880,8 @@ class HysteresisTestPanel {
     console.log(this.parent.currentHysteresisTestId);
     this.parent.onGoingTest = true;
     this.toggleStartStopButton();
+    // set this.stopTest as the onGoingTest stop function of parent
+    this.parent.stopTest = this.stopTest.bind(this);
     // disable load and duration input
     this.loadInput.disabled = true;
     this.durationInput.disabled = true;
@@ -837,7 +896,7 @@ class HysteresisTestPanel {
       data: data,
       type: "json",
       load: this.testLoad,
-      duration: this.testDuration,
+      duration: this.parent.testDuration,
       startTime: this.parent.testStartTime,
       stopTime: this.parent.testStopTime,
     });
@@ -851,7 +910,7 @@ class HysteresisTestPanel {
       type: "json",
       reportTemplate: "HysteresisTest",
       load: this.testLoad,
-      duration: this.testDuration,
+      duration: this.parent.testDuration,
     });
   }
   stopTest() {
@@ -863,6 +922,8 @@ class HysteresisTestPanel {
     this.toggleStartStopButton();
     this.parent.testData = [];
     this.parent.currentHysteresisTestId = null;
+    this.parent.testDuration = null;
+    this.parent.stopTest = null;
     // enable load and duration input
     this.loadInput.disabled = false;
     this.durationInput.disabled = false;
@@ -947,7 +1008,7 @@ class CreepTestPanel {
     this.durationInput = document.getElementById("creep-test-duration-input");
     this.startButton.onclick = async () => {
       this.testLoad = this.readLoad();
-      this.testDuration = this.readDuration();
+      this.parent.testDuration = this.readDuration();
       this.startTest();
     };
     this.stopButton.onclick = async () => {
@@ -977,6 +1038,8 @@ class CreepTestPanel {
     console.log(this.parent.currentCreepTestId);
     this.parent.onGoingTest = true;
     this.toggleStartStopButton();
+    // set this.stopTest as the onGoingTest stop function of parent
+    this.parent.stopTest = this.stopTest.bind(this);
     // disable load and duration input
     this.loadInput.disabled = true;
     this.durationInput.disabled = true;
@@ -991,7 +1054,7 @@ class CreepTestPanel {
       data: data,
       type: "json",
       load: this.testLoad,
-      duration: this.testDuration,
+      duration: this.parent.testDuration,
       startTime: this.parent.testStartTime,
       stopTime: this.parent.testStopTime,
     });
@@ -1005,7 +1068,7 @@ class CreepTestPanel {
       type: "json",
       reportTemplate: "creepTest",
       load: this.testLoad,
-      duration: this.testDuration,
+      duration: this.parent.testDuration,
     });
   }
   stopTest() {
@@ -1017,6 +1080,8 @@ class CreepTestPanel {
     this.toggleStartStopButton();
     this.parent.testData = [];
     this.parent.currentCreepTestId = null;
+    this.parent.testDuration = null;
+    this.parent.stopTest = null;
     // enable load and duration input
     this.loadInput.disabled = false;
     this.durationInput.disabled = false;

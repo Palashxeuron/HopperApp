@@ -22,8 +22,8 @@ if (!isPackaged) {
 function createWindow() {
   // Create the browser window.
   mainWindow = new BrowserWindow({
-    width: 800,
-    height: 600,
+    width: 1080,
+    height: 800,
     backgroundColor: "#ccc",
     webPreferences: {
       nodeIntegration: true, // to allow require
@@ -32,7 +32,9 @@ function createWindow() {
     },
   });
   // open dev tools
-  mainWindow.webContents.openDevTools();
+  if (!isPackaged) {
+    mainWindow.webContents.openDevTools();
+  }
   // and load the index.html of the app.
   mainWindow.loadURL(
     url.format({

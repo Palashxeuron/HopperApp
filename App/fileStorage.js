@@ -1,5 +1,7 @@
 const electron = require("electron");
+const { app, ipcMain, dialog } = require("electron");
 const fs = require("node:fs");
+const { type } = require("node:os");
 const path = require("node:path");
 
 class FileStorage {
@@ -13,7 +15,18 @@ class FileStorage {
       fs.mkdirSync(this.dataDir);
     }
   }
-
+  selectFile() {
+    const options = {
+      
+      title: "Select a file to open",
+      properties: ["openFile"],
+      // only allow to select single file
+      multiSelections: false,
+      defaultPath: this.dataDir,
+      filters: [{ name: "JSON Files", extensions: ["json"] }],
+    };
+    return dialog.showOpenDialogSync(options);
+  }
   saveFile(dataJson) {
     const filename = dataJson.filename;
     let filePath = path.join(this.dataDir, `${filename}.json`);
@@ -42,13 +55,16 @@ class FileStorage {
       console.error(`Error writing data to "${filename}": ${error.message}`);
     }
   }
-  getFile(filename) {
+  getFile(filePath_) {
     try {
-      const filePath = path.join(this.dataDir, `${filename}.json`);
+      // const filePath = path.join(this.dataDir, `${filename}.json`);
+      const filePath = filePath_[0];
+      console.log("Reading data from file: ", filePath, typeof filePath);
       if (fs.existsSync(filePath)) {
         const fileData = fs.readFileSync(filePath, "utf-8");
         return JSON.parse(fileData);
       }
+        console.log("File does not exist: ", filePath);
     } catch (error) {
       console.error(`Error reading data from "${filename}": ${error.message}`);
     }

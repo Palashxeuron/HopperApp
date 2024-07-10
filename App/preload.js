@@ -24,7 +24,9 @@ contextBridge.exposeInMainWorld("bt", {
 });
 contextBridge.exposeInMainWorld("fileStorage", {
   writeData: (data) => ipcRenderer.invoke("save-file", data),
-  generateReport: (data) => ipcRenderer.invoke("generate-report", data),
+  selectFile: (data) => ipcRenderer.invoke("select-file", data),
+  getFile: (data) => ipcRenderer.invoke("get-file", data),
+  // generateReport: (data) => ipcRenderer.invoke("generate-report", data),
   openResultDir: (data) => ipcRenderer.invoke("open-results-dir", data),
 });
 

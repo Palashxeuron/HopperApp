@@ -2,7 +2,7 @@ const { ipcMain, dialog } = require("electron");
 const { ConnectionHandler } = require("./connectionHandler.js");
 const { Logger } = require("./logger.js");
 const { FileStorage } = require("./fileStorage.js");
-const { ReportGenerator } = require("./reportGenerator.js");
+// const { ReportGenerator } = require("./reportGenerator.js");
 
 class IpcHandler {
   constructor(mainWindow) {
@@ -10,7 +10,7 @@ class IpcHandler {
     this.logger = new Logger(mainWindow);
     this.connectionHandler = new ConnectionHandler(this.logger);
     this.fileStorage = new FileStorage();
-    this.reportGenerator = new ReportGenerator(this.fileStorage);
+    // this.reportGenerator = new ReportGenerator(this.fileStorage);
     this.initDone = this.init(mainWindow);
   }
   async init(mainWindow) {
@@ -67,12 +67,18 @@ class IpcHandler {
     ipcMain.handle("save-file", (event, data) => {
       return this.fileStorage.saveFile(data);
     });
+    ipcMain.handle("select-file", (event) => {
+      return this.fileStorage.selectFile();
+    });
+    ipcMain.handle("get-file", (event,data) => {
+      return this.fileStorage.getFile(data);
+    });
     ipcMain.handle("open-results-dir", (event) => {
       return this.fileStorage.openResultsDir();
     });
-    ipcMain.handle("generate-report", (event, data) => {
-      return this.reportGenerator.generatePdf(data);
-    });
+    // ipcMain.handle("generate-report", (event, data) => {
+    //   return this.reportGenerator.generatePdf(data);
+    // });
     ipcMain.handle("get-local-path", async (event, route) => {
       const selectedPath = await dialog.showOpenDialog({
         properties: ["openDirectory"],
